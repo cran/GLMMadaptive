@@ -1,0 +1,14 @@
+bc99ebdb04308eac936e09b9f6646f2e *DESCRIPTION
+559d4d768e20644697605003500b047f *NAMESPACE
+8d19eb2bbb3cc1136dff9a94d9ef239e *R/Fit_Funs.R
+81d19f61b56b47e712a85a130315aa38 *R/Functions.R
+eb40588566926ac46ee7479b2f3be490 *R/methods.R
+21571c3ac09640c1f36c0957154c26c0 *R/mixed_fit.R
+e1188fdf74a385ca7b216fbadd9f37f6 *R/mixed_model.R
+66b9dda2ba9f1a1c7fb74d090a0e63c6 *README.md
+70751864309da752216e0f9f5e060a59 *man/GLMMadaptive.Rd
+b62f240702d596cf6bacf43b0ee51009 *man/effectPlotData.Rd
+16e1508080da2304ebbc09341988a181 *man/marginal_coefs.Rd
+7ffec9140b4bfb4b39099f6fc2185ed5 *man/methods.Rd
+3ffe1ee263e0d5ae3b8c439409e0e344 *man/mixed_model.Rd
+7ea708ca4d55f898d9b31d31016065bf *man/negative_binomial.Rd
