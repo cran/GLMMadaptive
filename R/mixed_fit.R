@@ -46,9 +46,9 @@ mixed_fit <- function (y, X, Z, id, offset, family, initial_values, Funs, contro
     nparams <- length(betas) + length(if (diag_D) diag(D) else D[lower.tri(D, TRUE)]) + length(phis)
     post_modes <- matrix(0.0, n, ncz)
     # penalized components
-    pen_mu <- if (penalized$penalized) rep(penalized$pen_mu, ncx - 1)
-    pen_invSigma <- if (penalized$penalized) diag(rep(1 / penalized$pen_sigma^2, ncx - 1), 
-                                                  ncx - 1)
+    pen_mu <- if (penalized$penalized) rep(penalized$pen_mu, length.out = ncx - 1)
+    pen_invSigma <- if (penalized$penalized) 
+        diag(rep(1 / penalized$pen_sigma^2, length.out = ncx - 1), ncx - 1)
     pen_df <- if (penalized$penalized) penalized$pen_df
     penalized <- penalized$penalized
     # set up EM algorithm
@@ -90,7 +90,7 @@ mixed_fit <- function (y, X, Z, id, offset, family, initial_values, Funs, contro
             log_p_b <- matrix(dmvnorm(b, rep(0, ncz), D, TRUE), n, nAGQ^ncz, byrow = TRUE)
             p_yb <- exp(log_p_yb + log_p_b)
             if (any(zero_ind <- p_yb == 0.0)) {
-                p_yb[zero_ind] <- 1e-30
+                p_yb[zero_ind] <- 1e-300
             }
             p_y <- c(p_yb %*% wGH)
             p_by <- p_yb / p_y
@@ -99,8 +99,6 @@ mixed_fit <- function (y, X, Z, id, offset, family, initial_values, Funs, contro
                 colSums(t_p_by * matrix(b_k, nAGQ_cartesian, n) * wGH))
             post_b2 <- apply(b2, 2, function (b_k)
                 colSums(t_p_by * matrix(b_k, nAGQ_cartesian, n) * wGH))
-            post_vb <- post_b2 - if (ncz > 1) t(apply(post_b, 1, function (x) x %o% x)) else
-                as.matrix(apply(post_b, 1, function (x) x %o% x))
             # calculate log-likelihood
             log_p_y <- log(p_y * dets)
             lgLik[it] <- sum(log_p_y[is.finite(log_p_y)], na.rm = TRUE)
@@ -132,7 +130,7 @@ mixed_fit <- function (y, X, Z, id, offset, family, initial_values, Funs, contro
             }
             ############################
             # update parameters
-            Dn <- matrix(colMeans(post_b2, na.rm = TRUE), ncol(Z), ncol(Z))
+            Dn <- matrix(colMeans(post_b2, na.rm = TRUE), ncz, ncz)
             D <- 0.5 * (Dn + t(Dn))
             if (diag_D) {
                 D <- diag(diag(D), ncz)
@@ -227,7 +225,8 @@ mixed_fit <- function (y, X, Z, id, offset, family, initial_values, Funs, contro
                       penalized = penalized, pen_mu = pen_mu, 
                       pen_invSigma = pen_invSigma, pen_df = pen_df)
     list(coefficients = betas, phis = if (has_phis) phis, D = D,
-         post_modes = GH$post_modes, logLik = logLik, Hessian = Hessian,
+         post_modes = GH$post_modes, post_vars = GH$post_vars,
+         logLik = logLik, Hessian = Hessian,
          converged = converged)
 }
 

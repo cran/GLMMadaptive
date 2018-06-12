@@ -1,6 +1,6 @@
 GLMMadaptive: Generalized Linear Mixed Models using Adaptive Gaussian Quadrature
 ================
-[![Travis-CI Build Status](https://travis-ci.org/drizopoulos/GLMMadaptive.svg?branch=master)](https://travis-ci.org/drizopoulos/GLMMadaptive)
+[![Travis-CI Build Status](https://travis-ci.org/drizopoulos/GLMMadaptive.svg?branch=master)](https://travis-ci.org/drizopoulos/GLMMadaptive) [![CRAN status](http://www.r-pkg.org/badges/version/GLMMadaptive)](https://cran.r-project.org/package=GLMMadaptive) [![](https://cranlogs.r-pkg.org/badges/grand-total/GLMMadaptive)](https://CRAN.R-project.org/package=GLMMadaptive) [![Download counter](http://cranlogs.r-pkg.org/badges/GLMMadaptive)](https://cran.r-project.org/package=GLMMadaptive)
 
 Description
 ------------
@@ -38,3 +38,17 @@ function `marginal_coefs()`.
 
 - Predictions with confidence interval for constructing effects plots are provided by 
 function `effectPlotData()`.
+
+Installation
+------------
+
+The development version of the package can be installed from GitHub using the **devtools**
+package:
+```
+devtools::install_github("drizopoulos/GLMMadaptive")
+```
+
+and with vignettes
+```
+devtools::install_github("drizopoulos/GLMMadaptive", build_vignettes = TRUE)
+```

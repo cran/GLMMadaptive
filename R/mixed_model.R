@@ -49,7 +49,8 @@ mixed_model <- function (fixed, random, data, family, na.action = na.exclude,
     con <- list(iter_EM = 30, iter_qN_outer = 15, iter_qN = 10, iter_qN_incr = 10,
                 optim_method = "BFGS", parscale_betas = 0.1, parscale_D = 0.01,
                 parscale_phis = 0.01, tol1 = 1e-03, tol2 = 1e-04, tol3 = 1e-07,
-                numeric_deriv = "fd", nAGQ = 11, update_GH_every = 10, verbose = FALSE)
+                numeric_deriv = "fd", nAGQ = if (ncol(Z) < 3) 11 else 7, 
+                update_GH_every = 10, verbose = FALSE)
     control <- c(control, list(...))
     namC <- names(con)
     con[(namc <- names(control))] <- control
@@ -86,7 +87,7 @@ mixed_model <- function (fixed, random, data, family, na.action = na.exclude,
     } else if (is.logical(penalized) && penalized) {
         list(penalized = penalized, pen_mu = 0, pen_sigma = 1, pen_df = 3)
     } else if (is.list(penalized)) {
-        if (!names(penalized) %in% c("pen_mu", "pen_sigma", "pen_df"))
+        if (!all(names(penalized) %in% c("pen_mu", "pen_sigma", "pen_df")))
             stop("when argument 'penalized' is a list it needs to have the components ",
                  "'pen_mu', 'pen_sigma' and 'pen_df'.\n")
         c(list(penalized = TRUE), penalized)
@@ -141,10 +142,26 @@ mixed_model <- function (fixed, random, data, family, na.action = na.exclude,
     # fix names
     names(out$coefficients) <- colnames(X)
     dimnames(out$D) <- list(colnames(Z), colnames(Z))
+    if (!is.null(out$phis))
+        names(out$phis) <- paste0("phi_", seq_along(out$phis))
+    all_nams <- if (diag_D) {
+        nams_D <- paste0("D_", seq_len(ncol(Z)), seq_len(ncol(Z)))
+        c(names(out$coefficients), nams_D, names(out$phis))
+    } else {
+        nams_D <- paste0("D_", apply(which(upper.tri(out$D, TRUE), arr.ind = TRUE), 1, 
+                                     paste0, collapse = ""))
+        c(names(out$coefficients), nams_D, names(out$phis))
+    }
+    dimnames(out$Hessian) <- list(all_nams, all_nams)
     out$id <- id_orig
     out$id_name <- id_nam 
     out$offset <- offset
     dimnames(out$post_modes) <- list(unique(id_orig), colnames(Z))
+    names(out$post_vars) <- unique(id_orig)
+    out$post_vars[] <- lapply(out$post_vars, function (v) {
+        dimnames(v) <- list(colnames(Z), colnames(Z))
+        v
+    })
     out$Terms <- list(termsX = termsX, termsZ = termsZ)
     out$model_frames <- list(mfX = mfX, mfZ = mfZ)
     out$control <- con

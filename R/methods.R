@@ -32,7 +32,7 @@ print.MixMod <- function (x, digits = max(4, getOption("digits") - 4), ...) {
     cat("\nFixed effects:\n")
     print(x$coefficients)
     if (!is.null(x$phis)) {
-        cat("\nphi parameters:\n", x$phis)
+        cat("\nphi parameters:\n", x$phis, "\n")
     }
     cat("\nlog-Lik:", x$logLik)
     cat("\n\n")
@@ -66,8 +66,11 @@ fixef.MixMod <- function(object, ...) {
     object$coefficients
 }
 
-ranef.MixMod <- function(object, ...) {
-    object$post_modes
+ranef.MixMod <- function(object, post_vars = FALSE, ...) {
+    out <- object$post_modes
+    if (post_vars)
+        attr(out, "post_vars") <- object$post_vars
+    out
 }
 
 summary.MixMod <- function (object, ...) {
@@ -240,7 +243,9 @@ anova.MixMod <- function (object, object2, test = TRUE, L = NULL, ...) {
             warning("the two objects represent models with the same number of parameters;",
                     " argument 'test' is set to FALSE.")
         }
-        if (test && object$family$family != object2$family$family) {
+        fam <- object$family$family
+        fam2 <- object2$family$family
+        if (test &&  (fam != fam2 && (fam != "poisson" & fam2 != "negative binomial"))) {
             warning("it seems that the two objects represent model with different families;",
                     " are the models nested? If not, you should set 'test' to FALSE.")
         }

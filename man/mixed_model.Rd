@@ -47,7 +47,11 @@ mixed_model(fixed, random, data, family, na.action = na.exclude,
 \item{initial_values}{a list of initial values. This can have up to three components, 
     namely,
     \describe{
-        \item{betas}{a numeric vector of fixed effects.}
+        \item{betas}{a numeric vector of fixed effects. This can also be 
+        \code{\link{family}} object. In this case initial values for the fixed effects 
+        will be calculated by using \code{\link{glm}} to the data ignoring the 
+        correlations in the repeated measurements. For example, for a negative binomial
+        response outcome, we could set \code{betas = poisson()}.}
         \item{D}{a numeric matrix denoting the covariance matrix of the random effects.}
         \item{phis}{a numeric vector for the extra (dispersion/shape) parameters.}
     }
@@ -56,7 +60,8 @@ mixed_model(fixed, random, data, family, na.action = na.exclude,
     \describe{
         \item{iter_EM}{numeric scalar denoting the number of EM iterations; default is 30.}
         \item{iter_qN_outer}{numeric scalar denoting the number of outer iterations during 
-            the quasi-Newton phase; default is 15.}
+            the quasi-Newton phase; default is 15. In each outer iteration the locations 
+            of the quadrature points are updated.}
         \item{iter_qN}{numeric scalar denoting the starting number of iterations for the 
             quasi-Newton; default is 10.}
         \item{iter_qN_incr}{numeric scalar denoting the increment in \code{iter_qN} for
@@ -79,7 +84,7 @@ mixed_model(fixed, random, data, family, na.action = na.exclude,
             to be used. Options are \code{"fd"} for forward differences, and \code{cd}
             for central difference; default is \code{"fd"}.}
         \item{nAGQ}{numeric scalar denoting the number of quadrature points; default is 
-            11.}
+            11 when the number of random effects is one or two, and 7 otherwise.}
         \item{update_GH_every}{numeric scalar denoting every how many iterations to 
             update the quadrature points during the EM-phase; default is 10.}
         \item{verbose}{logical; print information during the optimization phase; default 
@@ -114,6 +119,7 @@ An object of class \code{"MixMod"} with components:
 \item{phis}{a numeric vector with the estimated extra parameters.}
 \item{D}{a numeric matrix denoting the estimated covariance matrix of the random effects.}
 \item{post_modes}{a numeric matrix with the empirical Bayes estimates of the random effects.}
+\item{post_vars}{a list of numeric matrices with the posterior variances of the random effects.}
 \item{logLik}{a numeric scalar denoting the log-likelihood value at the end of the 
     optimization procedure.}
 \item{Hessian}{a numeric matrix denoting the Hessian matrix at the end of the optimization 
