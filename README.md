@@ -1,6 +1,9 @@
 GLMMadaptive: Generalized Linear Mixed Models using Adaptive Gaussian Quadrature
 ================
-[![Travis-CI Build Status](https://travis-ci.org/drizopoulos/GLMMadaptive.svg?branch=master)](https://travis-ci.org/drizopoulos/GLMMadaptive) [![CRAN status](http://www.r-pkg.org/badges/version/GLMMadaptive)](https://cran.r-project.org/package=GLMMadaptive) [![](https://cranlogs.r-pkg.org/badges/grand-total/GLMMadaptive)](https://CRAN.R-project.org/package=GLMMadaptive) [![Download counter](http://cranlogs.r-pkg.org/badges/GLMMadaptive)](https://cran.r-project.org/package=GLMMadaptive)
+
+<img src="inst/figures/hex_GLMMadaptive.png" height="205" align="right"/>
+
+[![Travis-CI Build Status](https://travis-ci.org/drizopoulos/GLMMadaptive.svg?branch=master)](https://travis-ci.org/drizopoulos/GLMMadaptive) [![CRAN status](http://www.r-pkg.org/badges/version/GLMMadaptive)](https://cran.r-project.org/package=GLMMadaptive) [![](https://cranlogs.r-pkg.org/badges/grand-total/GLMMadaptive)](https://CRAN.R-project.org/package=GLMMadaptive) [![Rdoc](http://www.rdocumentation.org/badges/version/GLMMadaptive)](http://www.rdocumentation.org/packages/GLMMadaptive) [![Download counter](http://cranlogs.r-pkg.org/badges/GLMMadaptive)](https://cran.r-project.org/package=GLMMadaptive) 
 
 Description
 ------------
@@ -44,11 +47,13 @@ Installation
 
 The development version of the package can be installed from GitHub using the **devtools**
 package:
-```
+```r
 devtools::install_github("drizopoulos/GLMMadaptive")
 ```
 
 and with vignettes
-```
+```r
 devtools::install_github("drizopoulos/GLMMadaptive", build_vignettes = TRUE)
 ```
+
+Hex-sticker courtesy of Greg Papageorgiou [@gr_papageorgiou](https://twitter.com/gr_papageorgiou).

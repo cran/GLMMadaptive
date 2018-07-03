@@ -12,8 +12,8 @@ Gaussian quadrature.
 
 \usage{
 mixed_model(fixed, random, data, family, na.action = na.exclude,
-  penalized = FALSE, n_phis = NULL, initial_values = NULL, 
-  control = list(), \dots)
+  zi_fixed = NULL, zi_random = NULL, penalized = FALSE, 
+  n_phis = NULL, initial_values = NULL, control = list(), \dots)
 }
 
 \arguments{
@@ -36,6 +36,8 @@ mixed_model(fixed, random, data, family, na.action = na.exclude,
     function \code{lme()} from the \bold{nlme} package or function \code{lmer()} from the
     \bold{lme4} package. }
 \item{na.action}{what to do with missing values in \code{data}.}
+\item{zi_fixed, zi_random}{formulas for the fixed and random effects of the zero inflated 
+    part.}
 \item{penalized}{logical or a list. If logical and equal to \code{FALSE}, then no penalty
     is used. If logical and equal to \code{TRUE}, for the fixed effects a Student's-t 
     penalty/prior with mean 0, scale equal to 1 and 3 degrees of freedom is used. If a
@@ -87,6 +89,11 @@ mixed_model(fixed, random, data, family, na.action = na.exclude,
             11 when the number of random effects is one or two, and 7 otherwise.}
         \item{update_GH_every}{numeric scalar denoting every how many iterations to 
             update the quadrature points during the EM-phase; default is 10.}
+        \item{max_coef_value}{numeric scalar denoting the maximum allowable value for the
+            fixed effects coefficients during the optimization; default is 10.}
+        \item{max_phis_value}{numeric scalar denoting the maximum allowable value for the
+            shape/dispersion parameter of the negative binomial distribution during the 
+            optimization; default is \code{exp(10)}.}
         \item{verbose}{logical; print information during the optimization phase; default 
             is \code{FALSE}.}
     }
