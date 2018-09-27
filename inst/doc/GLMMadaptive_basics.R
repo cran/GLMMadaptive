@@ -106,3 +106,8 @@ gm2 <- mixed_model(fixed = y ~ sex * time, random = ~ 1 | id, data = DF,
 ## ------------------------------------------------------------------------
 cbind('unpenalized' = fixef(gm1), 'penalized' = fixef(gm2))
 
+## ---- eval = FALSE-------------------------------------------------------
+#  gm3 <- mixed_model(fixed = y ~ sex * time, random = ~ 1 | id, data = DF,
+#                     family = poisson(),
+#                     penalized = list(pen_mu = 0, pen_sigma = 1, pen_df = 200))
+

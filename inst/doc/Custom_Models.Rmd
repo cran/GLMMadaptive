@@ -42,7 +42,7 @@ measurements outcome, `eta` denoting the linear predictor (fixed + random effect
 function), `phis` a vector of possible extra dispersion/scale parameters, and `eta_zi` the
 linear predictor (fixed + random effects) for the logistic regression for the extra zeros; 
 relevant in the cases of zero-inflated and two-part models. 
-**Even if `phis` and `eta_zi` may not be required, it should always appear as an argument of `log_dens`**. 
+**Even if `phis` and `eta_zi` may not be required, it should always appear as arguments of `log_dens`**. 
 Moreover, when the extra parameters `phis` are required, they should be appropriately 
 transformed in order for the optimization of the log-likelihood to be unconstrained with
 regard to these parameters. Finally, `log_dens` should be fully vectorized with respect to
@@ -64,7 +64,7 @@ extra parameters.
 We first illustrate the use of a custom-made family object in the case of a negative 
 binomial repeated measurements outcome. We should note however that a family object
 `negative.binomial()` is already defined in the package and users could invoke this 
-instead - for more info see the relative online help page for `negative.binomial()`.We 
+instead - for more info see the relative online help page for `negative.binomial()`. We 
 start by simulating some data:
 ```{r}
 set.seed(101)
@@ -348,12 +348,13 @@ gm
 To depict the results of the model we create an effects plot, showing the longitudinal 
 evolution of the average/median male and female. We start by constructing the data frame 
 that contains the values we want to depict, and using it in the `effectPlotData()` 
-function:
+function; just for illustration, sandwich/robust standard errors are used in the 
+calculation of the 95% poinwise cofidence intervals:
 ```{r}
 nDF <- with(DF, expand.grid(time = seq(min(time), max(time), length = 25),
                             sex = levels(sex)))
 
-plot_data <- effectPlotData(gm, nDF)
+plot_data <- effectPlotData(gm, nDF, sandwich = TRUE)
 ```
 
 The figure is created with a call to `xyplot()` from the 

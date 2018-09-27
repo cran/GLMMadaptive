@@ -27,14 +27,14 @@ to be specified as outlined in the vignette
 arguments `zi_fixed` and `zi_random` of `mixed_model()` come into play. In these 
 arguments, the user can specify the fixed and random effects `formulas` of the logistic 
 regression for the zero-part of the distribution of the outcome. We should note that the 
-user has the option to leave `zi_random` set to `NULL`, in which case the for the zero-part
-we have a logistic regression with only fixed effect and no random effects.
+user has the option to leave `zi_random` set to `NULL`, in which case for the zero-part
+we have a logistic regression with only fixed effects and no random effects.
 
-In addition, in the specification of the `family` object and in order to better facilitate 
+In addition, in the specification of the `family` object, and in order to better facilitate 
 the internal computations, the user may specify the function `score_eta_zi_fun` that 
 calculates the derivative of the log probability density function or the log probability
 mass function with respect to `eta_zi` that denotes the linear predictor of the logistic 
-regression for the zero-part. Here we provide three examples to illustrate how such models
+regression for the zero part. Here we provide three examples to illustrate how such models
 can be fitted.
 
 ## Zero-Inflated Poisson Mixed Effects Model
@@ -62,7 +62,7 @@ X_zi <- model.matrix(~ sex, data = DF)
 Z_zi <- model.matrix(~ 1, data = DF)
 
 betas <- c(1.5, 0.05, 0.05, -0.03) # fixed effects coefficients non-zero part
-shape <- 2
+shape <- 2 # shape/size parameter of the negative binomial distribution
 gammas <- c(-1.5, 0.5) # fixed effects coefficients zero part
 D11 <- 0.5 # variance of random intercepts non-zero part
 D22 <- 0.4 # variance of random intercepts zero part
@@ -89,10 +89,10 @@ fm1
 ```
 
 As noted above, only the log link is currently available for the non-zero part and the 
-logit link for the zero-part. Hence, the estimated fixed effects for the two parts are 
-interpreted accordingly. We extend `fm1` by allowing also for random intercept in the 
-zero-part. We should note that by default the random intercept from the non-zero part is 
-correlated with the random intercept from the zero-part:
+logit link for the zero part. Hence, the estimated fixed effects for the two parts are 
+interpreted accordingly. We extend `fm1` by allowing also for random intercepts in the 
+zero part. We should note that by default the random intercept of the non-zero part is 
+correlated with the random intercept from the zero part:
 ```{r}
 fm2 <- update(fm1, zi_random = ~ 1 | id)
 
@@ -109,8 +109,8 @@ The results suggest that the extra random effect improves the fit of the model.
 ## Zero-Inflated Negative Binomial Mixed Effects Model
 We continue with the same data, but we now take into account the potential over-dispersion 
 in the data using a zero-inflated negative binomial model. To fit this mixed model we use 
-almost identical syntax to what just did above - the only difference that now we specify
-as family the `zi.negative.binomial()` object:
+an almost identical syntax to what we just did above - the only difference is that we now 
+specify as family the `zi.negative.binomial()` object:
 ```{r}
 gm1 <- mixed_model(y ~ sex * time, random = ~ 1 | id, data = DF,
                    family = zi.negative.binomial(), zi_fixed = ~ sex)
@@ -118,17 +118,17 @@ gm1 <- mixed_model(y ~ sex * time, random = ~ 1 | id, data = DF,
 gm1
 ```
 
-Similarly to `fm1` in `gm1` we specified only fixed effects for the logistic regression 
+Similarly to `fm1`, in `gm1` we specified only fixed effects for the logistic regression 
 for the zero part. We now compare this model with the zero-inflated Poisson model that 
-allowed for a random intercept in the zero-part. The comparison can be done with the
-`anova()` method; because the two models are not nested we set `test = FALSE` in the call
+allowed for a random intercept in the zero part. The comparison can be done with the
+`anova()` method; because the two models are not nested, we set `test = FALSE` in the call
 to `anova()`, i.e.:
 ```{r}
 anova(gm1, fm2, test = FALSE)
 ```
 
 We observe that accounting for the over-dispersion seems to better improve the fit than
-including the random intercepts term in the zero-part.
+including the random intercepts term in the zero part.
 
 ## Two-Part Mixed Effects Model for Semi-Continuous Data
 To further illustrate the flexibility provided by **GLMMadaptive** in allowing users to
@@ -178,18 +178,22 @@ DF$y <- exp(rnorm(n * K, mean = eta_y, sd = sigma))
 DF$y[as.logical(rbinom(n * K, size = 1, prob = plogis(eta_zi)))] <- 0
 ```
 
-We define the `family` object: The minimal requirement is to specify the `log_dens` 
+To fit the two-part mixed model for log-normal data we can use the already build-in 
+`hurdle.lognormal()` family object. However, just as an illustration, and to show that 
+users can define their own family objects to be used in `mixed_model()`, we explain how
+exactly `hurdle.lognormal()` is specified. To define the family object: The minimal 
+requirement is to specify the `log_dens` 
 component and the link function; however, as also explained in the [Custom Models](http://www.drizopoulos.com/vignettes/Custom_Models.html) vignette, the internal
 calculations will be faster and more stable if the user also specifies the score vector 
 for the linear predictor of the non-zero part (function `score_eta_fun()`), the derivative
 of the log density with respect to `phis` (function `score_phis_fun()`), and because we 
-have a model with a zero-part, also the derivative of the log density with respect to the
+have a model with a zero part, also the derivative of the log density with respect to the
 linear predictor of the zero part (function `score_eta_zi_fun()`). Finally, for being 
 able to simulate from the model using the `simulate()` method, the function `simulate()`
 within the family object can also be specified. Hence, the family object for the two-part 
 model is defined as:
 ```{r}
-two_part.lognormal <- function () {
+hurdle.lognormal <- function () {
     stats <- make.link("identity")
     log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
         sigma <- exp(phis)
@@ -248,12 +252,12 @@ two_part.lognormal <- function () {
 }
 ```
 
-Then to fit the model we provide the user-defined family object in the `family` argument 
-of `mixed_model()` specifying also that we have one dispersion parameter in the family 
-(i.e., `n_phis = 1`), and that in the zero-part we only include fixed effects: 
+Then to fit the model, we provide the user-defined family object in the `family` argument 
+of `mixed_model()`, specifying also that we have one dispersion parameter in the family 
+(i.e., `n_phis = 1`), and that in the zero part we only include fixed effects: 
 ```{r}
 km1 <- mixed_model(y ~ sex * time, random = ~ 1 | id, data = DF, 
-                  family = two_part.lognormal(), n_phis = 1,
+                  family = hurdle.lognormal(), n_phis = 1,
                   zi_fixed = ~ sex)
 
 km1
@@ -273,8 +277,8 @@ Finally, we show how the `simulate()` method can be used to perform a replicatio
 posterior predictive check. In particular, in the following code we compare the empirical
 distribution function estimated in the observed data with estimates of the empirical
 distribution function obtained from simulated/replicated data from the model. In the call
-to `simulate()` below we also specify to account for the variability in the maximum likelihood 
-estimates by setting `acount_MLEs_var = TRUE`:
+to `simulate()` below we also specify to account for the variability in the maximum 
+likelihood estimates by setting `acount_MLEs_var = TRUE`:
 ```{r}
 par(mar = c(2.5, 2.5, 0, 0), mgp = c(1.1, 0.5, 0), cex.axis = 0.7, cex.lab = 0.8)
 y <- DF$y
@@ -288,4 +292,124 @@ lines(x_vals, ecdf(y)(x_vals))
 legend("bottomright", c("replicated data", "observed data"), lty = 1, 
        col = c("lightgrey", "black"), bty = "n", cex = 0.8)
 ```
+
+## Two-Part/Hurdle Poisson Mixed Effects Model
+An alternative modeling framework to account for high percentages of 0 in count data is 
+hurdle models. These models are similar to the two-part model for semi-continuous data 
+presented above. The difference is that for the positive part we have positive counts 
+instead of a positive continuous outcome. For the positive counts, a truncated at zero 
+Poisson or negative binomial distribution is typically used. Both hurdle Poisson and hurdle 
+negative binomial mixed models can be fitted by `mixed_model()` using the family objects
+`hurdle.poisson()` and `hurdle.negative.binomial`, respectively.
+
+To illustrate how these models are fitted, we simulate some longitudinal data from a 
+hurdle negative binomial model using the code:
+```{r}
+set.seed(123)
+n <- 100 # number of subjects
+K <- 8 # number of measurements per subject
+t_max <- 5 # maximum follow-up time
+
+# we constuct a data frame with the design: 
+# everyone has a baseline measurment, and then measurements at random follow-up times
+DF <- data.frame(id = rep(seq_len(n), each = K),
+                 time = c(replicate(n, c(0, sort(runif(K - 1, 0, t_max))))),
+                 sex = rep(gl(2, n/2, labels = c("male", "female")), each = K))
+
+# design matrices for the fixed and random effects non-zero part
+X <- model.matrix(~ sex * time, data = DF)
+Z <- model.matrix(~ time, data = DF)
+# design matrices for the fixed and random effects zero part
+X_zi <- model.matrix(~ sex, data = DF)
+Z_zi <- model.matrix(~ 1, data = DF)
+
+betas <- c(1.5, 0.05, 0.05, -0.03) # fixed effects coefficients non-zero part
+shape <- 2 # shape/size parameter of the negative binomial distribution
+gammas <- c(-1.5, 0.5) # fixed effects coefficients zero part
+D11 <- 0.5 # variance of random intercepts non-zero part
+D22 <- 0.1 # variance of random slopes non-zero part
+D33 <- 0.4 # variance of random intercepts zero part
+
+# we simulate random effects
+b <- cbind(rnorm(n, sd = sqrt(D11)), rnorm(n, sd = sqrt(D22)), rnorm(n, sd = sqrt(D33)))
+# linear predictor non-zero part
+eta_y <- as.vector(X %*% betas + rowSums(Z * b[DF$id, 1:2, drop = FALSE]))
+# linear predictor zero part
+eta_zi <- as.vector(X_zi %*% gammas + rowSums(Z_zi * b[DF$id, 3, drop = FALSE]))
+# we simulate truncated at zero negative binomial longitudinal data
+lower <- pnbinom(0, mu = exp(eta_y), size = shape)
+u <- runif(n * K, min = lower, max = 1)
+DF$y <- qnbinom(u, mu = exp(eta_y), size = shape)
+# we set the zeros from the logistic regression
+DF$y[as.logical(rbinom(n * K, size = 1, prob = plogis(eta_zi)))] <- 0
+```
+
+The following code fits a hurdle Poisson mixed effects model. In the fixed-effects part 
+for the positive counts we include the main effects of `sex` and `time` and their 
+interaction, and in the random-effects for the positive counts random intercepts and random
+slopes. For the zero-part we only include a fixed-effects part, using argument `zi_fixed`, 
+with `sex` as the predictor: 
+```{r}
+dm1 <- mixed_model(y ~ sex * time, random = ~ time | id, data = DF, 
+                  family = hurdle.poisson(), zi_fixed = ~ sex)
+
+dm1
+```
+
+Currently, only the log-link is implemented for the `hurdle.poisson()` family. The output
+is similar as in the case of the zero-inflated models. However, it has been noted that 
+the fixed-effects coefficients for the positive counts part relate to the mean $\mu$ of
+Poisson distribution that includes the zeros, not the mean for those who experience the 
+event. The mean for those who experience more than one events is $\mu / (1 - e^{-\mu})$. 
+Hence, a $\beta = 0.1$ cannot be interpreted as reflecting a $e^\beta =$ 10% increase in 
+the mean of the subjects who experience the events.
+
+We extend model `dm1` by also including a random intercept for the zero-part. As we have 
+done above, this is achieved by specifying the `zi_random` argument, i.e.:
+```{r}
+dm2 <- update(dm1, zi_random = ~ 1 | id)
+
+dm2
+```
+
+The likelihood ratio test between the two models is computed with the `anova()` method:
+```{r}
+anova(dm1, dm2)
+```
+
+The result indicates that the extra random effect for the zero-part improves the fit of
+the model.
+
+## Two-Part/Hurdle Negative Binomial Mixed Effects Model
+We continue our illustration of hurdle models by fitting the hurdle negative binomial 
+mixed model. The only change from the previous syntax we used is the name of the family 
+object, namely, we use now `hurdle.negative.binomial()`. The code below fits exactly the
+same model as model `dm1` above, but using now the negative binomial distribution for the
+positive counts:
+```{r}
+hm1 <- mixed_model(y ~ sex * time, random = ~ time | id, data = DF, 
+                  family = hurdle.negative.binomial(), zi_fixed = ~ sex)
+
+hm1
+```
+
+Also for the `hurdle.negative.binomial()` family only the log-link is implemented. The 
+structure of the output is identical to what we had for the hurdle Poisson model. 
+Again we should note that the fixed-effects coefficients for the positive part have an 
+interpretation for the mean of the entire distribution, not only for the positive counts.
+
+We update again the fitted model `hm1` by including a random intercept for the zero-part:
+```{r}
+hm2 <- update(hm1, zi_random = ~ 1 | id)
+
+hm2
+```
+
+The likelihood ratio test between the two models is computed with the `anova()` method:
+```{r}
+anova(hm1, hm2)
+```
+
+The result again indicates that the extra random effect for the zero-part improves the fit
+of the model.
 

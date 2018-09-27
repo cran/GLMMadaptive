@@ -239,7 +239,7 @@ gm
 nDF <- with(DF, expand.grid(time = seq(min(time), max(time), length = 25),
                             sex = levels(sex)))
 
-plot_data <- effectPlotData(gm, nDF)
+plot_data <- effectPlotData(gm, nDF, sandwich = TRUE)
 
 ## ---- fig.show = "hold"--------------------------------------------------
 library("lattice")

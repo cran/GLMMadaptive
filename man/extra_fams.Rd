@@ -1,22 +1,33 @@
-\name{Zero Inflated Family Objects}
+\name{Extra Family Objects}
+\alias{beta.fam}
 \alias{zi.poisson}
 \alias{zi.negative.binomial}
+\alias{hurdle.poisson}
+\alias{hurdle.negative.binomial}
+\alias{hurdle.lognormal}
+
 
 \title{
-Family functions for Zero-Inflated Poisson and Negative Binomial Mixed Models
-}
+Family functions for Beta, Zero-Inflated and Hurdle Poisson and Negative Binomial,
+and Hudle Log-Normal Mixed Models}
 
 \description{
-Specifies the information required to fit a zero-inflated Poisson and zero-inflated 
-Negative Binomial generalized linear mixed model, using \code{mixed_model()}.
+Specifies the information required to fit a Beta, zero-inflated and hurdle Poisson, 
+zero-inflated and hurdle Negative Binomial and a hurdle normal mixed-effects model, using 
+\code{mixed_model()}.
 }
 
 \usage{
+beta.fam()
 zi.poisson()
 zi.negative.binomial()
+hurdle.poisson()
+hurdle.negative.binomial()
+hurdle.lognormal()
 }
 
-\note{Currently only the log-link is implemented.}
+\note{Currently only the log-link is implemented for the Poisson and negative binomial 
+models, the logit link for the beta model and the identity link for the log-normal model.}
 
 \examples{
 # simulate some data from a negative binomial model

@@ -41,7 +41,8 @@ logLik_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi,
 score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, GH, 
                          canonical, user_defined, Xty, log_dens, mu_fun, var_fun, 
                          mu.eta_fun, score_eta_fun, score_eta_zi_fun, score_phis_fun, 
-                         list_thetas, diag_D, penalized, pen_mu, pen_invSigma, pen_df) {
+                         list_thetas, diag_D, penalized, pen_mu, pen_invSigma, pen_df,
+                         i_contributions = FALSE) {
     thetas <- relist(thetas, skeleton = list_thetas)
     betas <- thetas$betas
     phis <- thetas$phis
@@ -83,47 +84,70 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
     ###
     mu_y <- if (!is.null(attr(log_Lik, "mu_y"))) attr(log_Lik, "mu_y") else mu_fun(eta_y)
     score.betas <- if (user_defined) {
+        ncx <- ncol(X)
+        sc <- if (i_contributions) matrix(0.0, n, ncx) else numeric(ncx)
         if (!is.null(score_eta_fun)) {
             z <- score_eta_fun(y, mu_y, phis, eta_zi)
-            ncx <- ncol(X)
-            sc <- numeric(ncx)
             for (l in seq_len(ncx)) {
                 cc <- drop(rowsum(X[, l] * z, id, reorder = FALSE))
-                sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
+                if (i_contributions) {
+                    sc[, l] <- c((cc * p_by) %*% wGH)
+                } else {
+                    sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
+                }
+                
             }
             - sc
         } else {
             l1 <- log_dens(y, eta_y + 1e-04, mu_fun, phis, eta_zi)
             l2 <- log_dens(y, eta_y - 1e-04, mu_fun, phis, eta_zi)
             z <- (l1 - l2) / (2 * 1e-04)
-            ncx <- ncol(X)
-            sc <- numeric(ncx)
             for (l in seq_len(ncx)) {
                 cc <- drop(rowsum(X[, l] * z, id, reorder = FALSE))
-                sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
+                if (i_contributions) {
+                    sc[, l] <- c((cc * p_by) %*% wGH)
+                } else {
+                    sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
+                }
             }
             - sc
         }
     } else {
+        ncx <- ncol(X)
+        sc <- if (i_contributions) matrix(0.0, n, ncx) else numeric(ncx)
         if (canonical) {
             if (!is.null(N))
                 mu_y <- mu_y * N
-            ncx <- ncol(X)
-            sc <- numeric(ncx)
             for (l in seq_len(ncx)) {
                 cc <- drop(rowsum(X[, l] * mu_y, id, reorder = FALSE))
-                sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
+                if (i_contributions) {
+                    sc[, l] <- c((cc * p_by) %*% wGH)
+                } else {
+                    sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
+                }
             }
-            - Xty + sc
+            if (i_contributions) {
+                sc2 <- matrix(0.0, n, ncx)
+                for (i in seq_len(n)) {
+                    sc2[i, ] <- drop(
+                        if (NCOL(y) == 2) crossprod(X[id == i, , drop = FALSE], y[id == i, 1]) 
+                    else crossprod(X[id == i, , drop = FALSE], y[id == i]))
+                }
+                - sc2 + sc
+            } else {
+                - Xty + sc
+            }
         } else {
             var <- var_fun(mu_y)
             deriv <- mu.eta_fun(eta_y)
             z <- if (!is.null(N)) (y[, 1] - N * mu_y) * deriv / var else (y - mu_y) * deriv / var
-            ncx <- ncol(X)
-            sc <- numeric(ncx)
             for (l in seq_len(ncx)) {
                 cc <- drop(rowsum(X[, l] * z, id, reorder = FALSE))
-                sc[l] <- sum(c((cc * p_by) %*% wGH))
+                if (i_contributions) {
+                    sc[, l] <- c((cc * p_by) %*% wGH)
+                } else {
+                    sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
+                }
             }
             - sc
         }
@@ -137,7 +161,7 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
     score.phis <- if (!is.null(phis)) {
         if (is.null(score_phis_fun)) {
             n_phis <- length(phis)
-            sc <- numeric(n_phis)
+            sc <- if (i_contributions) matrix(0.0, n, n_phis) else numeric(n_phis)
             for (i in seq_len(n_phis)) {
                 phis1 <- phis2 <- phis
                 phis1[i] <- phis[i] + 1e-03
@@ -145,12 +169,20 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
                 l1 <- log_dens(y, eta_y, mu_fun, phis1, eta_zi)
                 l2 <- log_dens(y, eta_y, mu_fun, phis2, eta_zi)
                 z <- (l1 - l2) / (phis1[i] - phis2[i])
-                sc[i] <- sum(c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH), na.rm = TRUE)
+                if (i_contributions) {
+                    sc[, i] <- c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH)
+                } else {
+                    sc[i] <- sum(c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH), na.rm = TRUE)
+                }
             }
             - sc
         } else {
             z <- score_phis_fun(y, mu_y, phis, eta_zi)
-            -sum(c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH), na.rm = TRUE)
+            if (i_contributions) {
+                -c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH)
+            } else {
+                -sum(c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH), na.rm = TRUE)
+            }
         }
     }
     score.gammas <- if (!is.null(X_zi)) {
@@ -162,10 +194,14 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
             (l1 - l2) / (2 * 1e-03)
         }
         ncx_zi <- ncol(X_zi)
-        sc <- numeric(ncx_zi)
+        sc <- if (i_contributions) matrix(0.0, n, ncx_zi) else numeric(ncx_zi)
         for (l in seq_len(ncx_zi)) {
             cc <- drop(rowsum(X_zi[, l] * z, id, reorder = FALSE))
-            sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
+            if (i_contributions) {
+                sc[, l] <- c((cc * p_by) %*% wGH)
+            } else {
+                sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
+            }
         }
         - sc
     }
@@ -174,29 +210,54 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
         D <- diag(D)
         svD <- 1/D
         svD2 <- svD^2
-        cS.postVB <- colSums(as.matrix(post_vb), na.rm = TRUE)
-        dim(cS.postVB) <- c(nRE, nRE)
-        D * 0.5 * (n * svD - diag(cS.postVB) * svD2 - 
-                       colSums(as.matrix(post_b^2), na.rm = TRUE) * svD2)
+        if (i_contributions) {
+            NA
+        } else {
+            cS.postVB <- colSums(as.matrix(post_vb), na.rm = TRUE)
+            dim(cS.postVB) <- c(nRE, nRE)
+            D * 0.5 * (n * svD - diag(cS.postVB) * svD2 - 
+                           colSums(as.matrix(post_b^2), na.rm = TRUE) * svD2)
+        }
     } else {
         svD <- solve(D)
         dD <- deriv_D(D)
         ndD <- length(dD)
         D1 <- sapply(dD, function (x) sum(svD * x))
         D2 <- t(sapply(dD, function (x) c(svD %*% x %*% svD)))
-        cS.postVB <- colSums(as.matrix(post_vb), na.rm = TRUE)
-        out <- numeric(ndD)
-        for (i in seq_along(dD)) {
-            D.mat <- D2[i, ]
-            dim(D.mat) <- c(nRE, nRE)
-            out[i] <- sum(D2[i, ] * cS.postVB, na.rm = TRUE) +
-                sum((post_b %*% D.mat) * post_b, na.rm = TRUE)
+        if (i_contributions) {
+            rr <- matrix(0.0, n, ndD)
+            for (j in seq_len(n)) {
+                cS.postVB <- colSums(as.matrix(post_vb)[j, , drop = FALSE], na.rm = TRUE)
+                out <- numeric(ndD)
+                for (i in seq_along(dD)) {
+                    D.mat <- D2[i, ]
+                    dim(D.mat) <- c(nRE, nRE)
+                    out[i] <- sum(D2[i, ] * cS.postVB, na.rm = TRUE) +
+                        sum((post_b[j, , drop = FALSE] %*% D.mat) * post_b[j, , drop = FALSE], na.rm = TRUE)
+                }
+                J <- jacobian2(attr(D, "L"), nRE)
+                rr[j, ] <- drop(0.5 * (D1 - out) %*% J)
+            }
+            rr
+        } else {
+            cS.postVB <- colSums(as.matrix(post_vb), na.rm = TRUE)
+            out <- numeric(ndD)
+            for (i in seq_along(dD)) {
+                D.mat <- D2[i, ]
+                dim(D.mat) <- c(nRE, nRE)
+                out[i] <- sum(D2[i, ] * cS.postVB, na.rm = TRUE) +
+                    sum((post_b %*% D.mat) * post_b, na.rm = TRUE)
+            }
+            J <- jacobian2(attr(D, "L"), nRE)
+            drop(0.5 * (n * D1 - out) %*% J)
         }
-        J <- jacobian2(attr(D, "L"), nRE)
-        drop(0.5 * (n * D1 - out) %*% J)
     }
     ###
-    c(score.betas, score.D, score.phis, score.gammas)
+    if (i_contributions)
+        list(score.betas = score.betas, score.D = score.D, score.phis = score.phis, 
+             score.gammas = score.gammas)
+    else
+        c(score.betas, score.D, score.phis, score.gammas)
 }
 
 score_betas <- function (betas, y, N, X, id, offset, phis, Ztb, eta_zi, p_by, wGH, canonical,
@@ -505,5 +566,226 @@ zi.negative.binomial <- function () {
                    score_eta_fun = score_eta_fun,
                    score_eta_zi_fun = score_eta_zi_fun,
                    score_phis_fun = score_phis_fun),
+              class = "family")
+}
+
+hurdle.poisson <- function () {
+    stats <- make.link("log")
+    log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
+        # binary indicator for y > 0
+        ind <- y > 0
+        # non-zero part
+        eta <- as.matrix(eta)
+        mu <- mu_fun(eta)
+        eta_zi <- as.matrix(eta_zi)
+        out <- eta
+        out[ind, ] <- plogis(eta_zi[ind, ], lower.tail = FALSE, log.p = TRUE) - 
+            mu[ind, ] + y[ind] * eta[ind, ] - log(- expm1(-mu[ind, ])) - lgamma(y[ind] + 1)
+        # zero part
+        out[!ind, ] <- plogis(eta_zi[!ind, ], log.p = TRUE)
+        attr(out, "mu_y") <- mu
+        out
+    }
+    score_eta_fun <- function (y, mu, phis, eta_zi) {
+        # binary indicator for y > 0
+        ind <- y > 0
+        # non-zero part
+        mu <- as.matrix(mu)
+        mu_ind <- mu[ind, ]
+        out <- mu
+        out[!ind, ] <- 0
+        out[ind, ] <- - mu_ind + y[ind] + (exp(-mu_ind) * mu_ind) / expm1(-mu_ind) 
+        out
+    }
+    score_eta_zi_fun <- function (y, mu, phis, eta_zi) {
+        ind <- y > 0
+        probs <- plogis(as.matrix(eta_zi))
+        out <- 1 - probs
+        out[ind, ] <- - probs[ind, ]
+        out
+    }
+    simulate <- function (n, mu, phis, eta_zi) {
+        y <- qpois(runif(n, ppois(0, mu), 1), mu)
+        y[as.logical(rbinom(n, 1, plogis(eta_zi)))] <- 0
+        y
+    }
+    structure(list(family = "hurdle poisson", link = stats$name, 
+                   linkfun = stats$linkfun, linkinv = stats$linkinv, log_dens = log_dens,
+                   score_eta_fun = score_eta_fun, score_eta_zi_fun = score_eta_zi_fun,
+                   simulate = simulate),
+              class = "family")
+}
+
+hurdle.negative.binomial <- function () {
+    stats <- make.link("log")
+    log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
+        phis <- exp(phis)
+        # binary indicator for y > 0
+        ind <- y > 0
+        # non-zero part
+        eta <- as.matrix(eta)
+        mu <- mu_fun(eta)
+        log_mu_phis <- log(mu + phis)
+        eta_zi <- as.matrix(eta_zi)
+        out <- eta
+        comp1 <- lgamma(y + phis) - lgamma(phis) - lgamma(y + 1)
+        comp2 <- phis * log(phis) - phis * log_mu_phis
+        comp3 <- y * log(mu) - y * log_mu_phis
+        log_g <- comp1 + comp2 + comp3
+        comp4 <- log(1 - (1 + mu / phis)^(-phis))
+        out[ind, ] <- plogis(eta_zi[ind, ], lower.tail = FALSE, log.p = TRUE) + 
+            log_g[ind, ] - comp4[ind, ]
+        # zero part
+        out[!ind, ] <- plogis(eta_zi[!ind, ], log.p = TRUE)
+        attr(out, "mu_y") <- mu
+        out
+    }
+    score_eta_fun <- function (y, mu, phis, eta_zi) {
+        phis <- exp(phis)
+        # binary indicator for y > 0
+        ind <- y > 0
+        # non-zero part
+        mu <- as.matrix(mu)
+        mu_phis <- mu + phis
+        comp2 <- - phis / mu_phis
+        comp3 <- y / mu - y / mu_phis
+        k <- (1 + mu / phis)
+        comp4 <- k^(- phis - 1) / (1 - k^(-phis))
+        mu.eta <- mu
+        out <- (comp2 + comp3 - comp4) * mu.eta
+        out[!ind, ] <- 0
+        out
+    }
+    score_eta_zi_fun <- function (y, mu, phis, eta_zi) {
+        ind <- y > 0
+        probs <- plogis(as.matrix(eta_zi))
+        out <- 1 - probs
+        out[ind, ] <- - probs[ind, ]
+        out
+    }
+    score_phis_fun <- function (y, mu, phis, eta_zi) {
+        ind_y0 <- y == 0
+        phis <- exp(phis)
+        mu <- as.matrix(mu)
+        mu_phis <- mu + phis
+        comp1 <- digamma(y + phis) - digamma(phis)
+        comp2 <- log(phis) + 1 - log(mu_phis) - phis / mu_phis
+        comp3 <- - y / mu_phis
+        k <- mu / phis
+        k1 <- 1 + k
+        comp4 <- k1^(-phis) * (k / k1 - log(k1)) / (1 - k1^(-phis))
+        out <- (comp1 + comp2 + comp3 + comp4) * phis
+        out[ind_y0, ] <- 0
+        out
+    }
+    simulate <- function (n, mu, phis, eta_zi) {
+        y <- qnbinom(runif(n, pnbinom(0, mu = mu, size = exp(phis)), 1), 
+                     mu = mu, size = exp(phis))
+        y[as.logical(rbinom(n, 1, plogis(eta_zi)))] <- 0
+        y
+    }
+    structure(list(family = "hurdle negative binomial", link = stats$name, 
+                   linkfun = stats$linkfun, linkinv = stats$linkinv, log_dens = log_dens,
+                   score_eta_fun = score_eta_fun, score_eta_zi_fun = score_eta_zi_fun,
+                   score_phis_fun = score_phis_fun,
+                   simulate = simulate),
+              class = "family")
+}
+
+hurdle.lognormal <- function () {
+    stats <- make.link("identity")
+    log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
+        sigma <- exp(phis)
+        # binary indicator for y > 0
+        ind <- y > 0
+        # non-zero part
+        eta <- as.matrix(eta)
+        eta_zi <- as.matrix(eta_zi)
+        out <- eta
+        out[ind, ] <- plogis(eta_zi[ind, ], lower.tail = FALSE, log.p = TRUE) + 
+            dnorm(x = log(y[ind]), mean = eta[ind, ], sd = sigma, log = TRUE)
+        # zero part
+        out[!ind, ] <- plogis(eta_zi[!ind, ], log.p = TRUE)
+        attr(out, "mu_y") <- eta
+        out
+    }
+    score_eta_fun <- function (y, mu, phis, eta_zi) {
+        sigma <- exp(phis)
+        # binary indicator for y > 0
+        ind <- y > 0
+        # non-zero part
+        eta <- as.matrix(mu)
+        out <- eta
+        out[!ind, ] <- 0
+        out[ind, ] <- (log(y[ind]) - eta[ind, ]) / sigma^2
+        out
+    }
+    score_eta_zi_fun <- function (y, mu, phis, eta_zi) {
+        ind <- y > 0
+        probs <- plogis(as.matrix(eta_zi))
+        out <- 1 - probs
+        out[ind, ] <- - probs[ind, ]
+        out
+    }
+    score_phis_fun <- function (y, mu, phis, eta_zi) {
+        sigma <- exp(phis)
+        # binary indicator for y > 0
+        ind <- y > 0
+        # non-zero part
+        eta <- as.matrix(mu)
+        out <- eta
+        out[!ind, ] <- 0
+        out[ind, ] <- - 1 + (log(y[ind]) - eta[ind, ])^2 / sigma^2
+        out
+    }
+    simulate <- function (n, mu, phis, eta_zi) {
+        y <- rnorm(n = n, mean = mu, sd = exp(phis))
+        y[as.logical(rbinom(n, 1, plogis(eta_zi)))] <- 0
+        y
+    }
+    structure(list(family = "hurdle log-normal", link = stats$name, 
+                   linkfun = stats$linkfun, linkinv = stats$linkinv, log_dens = log_dens,
+                   score_eta_fun = score_eta_fun, score_eta_zi_fun = score_eta_zi_fun,
+                   score_phis_fun = score_phis_fun, simulate = simulate),
+              class = "family")
+}
+
+beta.fam <- function () {
+    stats <- make.link("logit")
+    log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
+        # the log density function
+        phi <- exp(phis)
+        mu <- mu_fun(eta)
+        mu_phi <- mu * phi
+        comp1 <- lgamma(phi) - lgamma(mu_phi)
+        comp2 <- (mu_phi - 1) * log(y) - lgamma(phi - mu_phi)
+        comp3 <- (phi - mu_phi - 1) * log(1 - y)
+        out <- comp1 + comp2 + comp3
+        attr(out, "mu_y") <- mu
+        out
+    }
+    score_eta_fun <- function (y, mu, phis, eta_zi) {
+        # the derivative of the log density w.r.t. mu
+        phi <- exp(phis)
+        mu_phi <- mu * phi
+        comp1 <- - digamma(mu_phi) * phi
+        comp2 <- phi * (log(y) + digamma(phi - mu_phi))
+        comp3 <- - phi * log(1 - y)
+        # the derivative of mu w.r.t. eta (this depends on the chosen link function)
+        mu.eta <- mu - mu * mu
+        (comp1 + comp2 + comp3) * mu.eta
+    }
+    score_phis_fun <- function (y, mu, phis, eta_zi) {
+        phi <- exp(phis)
+        mu_phi <- mu * phi
+        mu1 <- 1 - mu
+        comp1 <- digamma(phi) - digamma(mu_phi) * mu
+        comp2 <- mu * log(y) - digamma(phi - mu_phi) * mu1
+        comp3 <- log(1 - y) * mu1
+        (comp1 + comp2 + comp3) * phi
+    }
+    structure(list(family = "beta", link = stats$name, linkfun = stats$linkfun,
+                   linkinv = stats$linkinv, log_dens = log_dens, 
+                   score_eta_fun = score_eta_fun, score_phis_fun = score_phis_fun),
               class = "family")
 }

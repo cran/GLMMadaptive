@@ -148,6 +148,7 @@ mixed_fit <- function (y, X, Z, X_zi, Z_zi, id, offset, offset_zi, family,
                 check2 <- (lgLik[it] - lgLik[it - 1]) < tol3 * (abs(lgLik[it - 1]) + tol3)
                 if (check1 || check2) {
                     converged <- TRUE
+                    attr(converged, "during_EM") <- TRUE
                     if (control$verbose)
                         cat("\n\nconverged!\ncalculating Hessian...\n")
                     break
@@ -302,9 +303,15 @@ mixed_fit <- function (y, X, Z, X_zi, Z_zi, id, offset, offset_zi, family,
                       score_phis_fun = score_phis_fun, list_thetas = list_thetas, 
                       diag_D = diag_D, penalized = penalized, pen_mu = pen_mu, 
                       pen_invSigma = pen_invSigma, pen_df = pen_df)
+    score_vect_contributions <- score_mixed(tht, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, GH, 
+                                            canonical, user_defined, Xty, log_dens, mu_fun, var_fun, 
+                                            mu.eta_fun, score_eta_fun, score_eta_zi_fun, score_phis_fun, 
+                                            list_thetas, diag_D, penalized, pen_mu, pen_invSigma, pen_df,
+                                            i_contributions = TRUE)
     list(coefficients = betas, phis = if (has_phis) phis, D = D, gammas = gammas,
          post_modes = GH$post_modes, post_vars = GH$post_vars,
-         logLik = logLik, Hessian = Hessian,
+         logLik = logLik, Hessian = Hessian, 
+         score_vect_contributions = score_vect_contributions,
          converged = converged)
 }
 
