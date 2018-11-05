@@ -45,3 +45,16 @@ fm_mc <- glht(fm, linfct = mcp(time = "Tukey"),
 
 summary(fm_mc)
 
+## ------------------------------------------------------------------------
+gm <- mixed_model(fixed = y ~ sex * time, random = ~ 1 | id, data = DF,
+                  family = binomial())
+
+## ---- message = FALSE----------------------------------------------------
+library("emmeans")
+gm_mc <- emmeans(gm, ~ sex | time)
+
+gm_mc
+
+## ------------------------------------------------------------------------
+pairs(gm_mc)
+

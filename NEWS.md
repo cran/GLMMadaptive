@@ -1,3 +1,16 @@
+# GLMMadaptive 0.4.0
+
+## General
+* The `predict()` method now works for zero-inflated and hurdle models.
+
+* Hurdle Beta mixed effects models are now available using the `hurdle.beta.fam` family
+object.
+
+* The new function `scoring_rules()` calculates proper scoring rule for subject-specific
+predictions from mixed models for categorical data.
+
+* Added support for the **emmeans** package.
+
 # GLMMadaptive 0.3.0
 
 ## General

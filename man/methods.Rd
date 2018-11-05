@@ -74,10 +74,10 @@ residuals(object, \dots)
 predict(object, \dots)
 
 \method{predict}{MixMod}(object, newdata, newdata2 = NULL, 
-    type_pred = c("link", "response"),
-    type = c("mean_subject", "subject_specific", "marginal"),
+    type_pred = c("response", "link"),
+    type = c("mean_subject", "subject_specific", "marginal", "zero_part"),
     se.fit = FALSE, M = 300, df = 10, scale = 0.3, level = 0.95, 
-    seed = 1, sandwich = FALSE, \dots)
+    seed = 1, return_newdata = FALSE, sandwich = FALSE, \dots)
     
 simulate(object, nsim = 1, seed = NULL, \dots)
 
@@ -144,6 +144,10 @@ model.matrix(object, \dots)
 \item{scale}{numeric scalar or vector denoting the scaling applied to the subject-specific
     covariance matrices of the random effects; see \bold{Details} for more information.}
 \item{seed}{numerical scalar giving the seed to be used in the Monte Carlo scheme.}
+\item{return_newdata}{logical; if \code{TRUE} the \code{predict()} method returns a copy
+    of the \code{newdata} and of \code{newdata2} if the corresponding argument was not 
+    \code{NULL}, with extra columns the predictions, and the lower and upper limits of
+    the cofidence intervals when \code{type = "subject_specific"}.}
 \item{nsim}{numeric scalar giving the number of times to simulate the response variable.}
 \item{acount_MLEs_var}{logical; if \code{TRUE} it accounts for the variability of the 
     maximum likelihood estimates (MLEs) by simulating a new value for the parameters from 
@@ -184,12 +188,21 @@ model.matrix(object, \dots)
  \code{\link{marginal_coefs}}. These predictions will be marginal / population averaged 
  predictions.
  
+ When \code{type = "zero_part"}, predictions are calculated for the logistic regression of
+ the extra zero-part of the model (i.e., applicable for zero-inflated and hurdle models).
+ 
  When \code{type = "subject_specific"}, predictions are calculated using both the fixed- 
  and random-effects parts, i.e., \eqn{X_i \beta + Z_i b_i}, where \eqn{X_i} and \eqn{Z_i} 
  are evaluated in \code{newdata}. Estimates for the random effects of each subject are 
  obtained as modes from the posterior distribution \eqn{[b_i | y_i; \theta]} evaluated in 
  \code{newdata} and with \eqn{theta} (denoting the parameters of the model, fixed effects
  and variance components) replaced by their maximum likelihood estimates. 
+ 
+ \bold{Notes:} (i) When \code{se.fit = TRUE} and \code{type_pred = "response"}, the 
+ standard errors returned are on the linear predictor scale, not the response scale. 
+ (ii) When \code{se.fit = TRUE} and the model contains an extra zero-part, no standard 
+ errors are computed when \code{type = "mean_subject"}. (iii) When the model contains an 
+ extra zero-part, \code{type = "marginal"} predictions are not yet implemented.
  
  When \code{se.fit = TRUE} and \code{type = "subject_specific"}, standard errors and 
  confidence intervals for the subject-specific predictions are obtained by a Monte Carlo 

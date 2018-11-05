@@ -77,6 +77,7 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
     p_by <- p_yb / p_y
     t_p_by <- t(p_by)
     n <- length(p_y)
+    NN <- length(y)
     post_b <- apply(b, 2, function (b_k) colSums(t_p_by * matrix(b_k, ncol(Ztb), n) * wGH))
     post_b2 <- apply(b2, 2, function (b_k) colSums(t_p_by * matrix(b_k, ncol(Ztb), n) * wGH))
     post_vb <- post_b2 - if (nRE > 1) t(apply(post_b, 1, function (x) x %o% x)) else
@@ -85,17 +86,16 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
     mu_y <- if (!is.null(attr(log_Lik, "mu_y"))) attr(log_Lik, "mu_y") else mu_fun(eta_y)
     score.betas <- if (user_defined) {
         ncx <- ncol(X)
-        sc <- if (i_contributions) matrix(0.0, n, ncx) else numeric(ncx)
+        sc <- if (i_contributions) matrix(0.0, NN, ncx) else numeric(ncx)
         if (!is.null(score_eta_fun)) {
             z <- score_eta_fun(y, mu_y, phis, eta_zi)
             for (l in seq_len(ncx)) {
                 cc <- drop(rowsum(X[, l] * z, id, reorder = FALSE))
                 if (i_contributions) {
-                    sc[, l] <- c((cc * p_by) %*% wGH)
+                    sc[, l] <- c((X[, l] * z * p_by[id, ]) %*% wGH)
                 } else {
                     sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
                 }
-                
             }
             - sc
         } else {
@@ -105,7 +105,7 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
             for (l in seq_len(ncx)) {
                 cc <- drop(rowsum(X[, l] * z, id, reorder = FALSE))
                 if (i_contributions) {
-                    sc[, l] <- c((cc * p_by) %*% wGH)
+                    sc[, l] <- c((X[, l] * z * p_by[id, ]) %*% wGH)
                 } else {
                     sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
                 }
@@ -114,26 +114,20 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
         }
     } else {
         ncx <- ncol(X)
-        sc <- if (i_contributions) matrix(0.0, n, ncx) else numeric(ncx)
+        sc <- if (i_contributions) matrix(0.0, NN, ncx) else numeric(ncx)
         if (canonical) {
             if (!is.null(N))
                 mu_y <- mu_y * N
             for (l in seq_len(ncx)) {
                 cc <- drop(rowsum(X[, l] * mu_y, id, reorder = FALSE))
                 if (i_contributions) {
-                    sc[, l] <- c((cc * p_by) %*% wGH)
+                    sc[, l] <- c((X[, l] * mu_y * p_by[id, ]) %*% wGH)
                 } else {
                     sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
                 }
-            }
+           }
             if (i_contributions) {
-                sc2 <- matrix(0.0, n, ncx)
-                for (i in seq_len(n)) {
-                    sc2[i, ] <- drop(
-                        if (NCOL(y) == 2) crossprod(X[id == i, , drop = FALSE], y[id == i, 1]) 
-                    else crossprod(X[id == i, , drop = FALSE], y[id == i]))
-                }
-                - sc2 + sc
+                - (X * if (NCOL(y) == 2) y[, 1] else y) + sc
             } else {
                 - Xty + sc
             }
@@ -144,7 +138,7 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
             for (l in seq_len(ncx)) {
                 cc <- drop(rowsum(X[, l] * z, id, reorder = FALSE))
                 if (i_contributions) {
-                    sc[, l] <- c((cc * p_by) %*% wGH)
+                    sc[, l] <- c((X[, l] * z * p_by[id, ]) %*% wGH)
                 } else {
                     sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
                 }
@@ -161,7 +155,7 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
     score.phis <- if (!is.null(phis)) {
         if (is.null(score_phis_fun)) {
             n_phis <- length(phis)
-            sc <- if (i_contributions) matrix(0.0, n, n_phis) else numeric(n_phis)
+            sc <- if (i_contributions) matrix(0.0, NN, n_phis) else numeric(n_phis)
             for (i in seq_len(n_phis)) {
                 phis1 <- phis2 <- phis
                 phis1[i] <- phis[i] + 1e-03
@@ -170,16 +164,17 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
                 l2 <- log_dens(y, eta_y, mu_fun, phis2, eta_zi)
                 z <- (l1 - l2) / (phis1[i] - phis2[i])
                 if (i_contributions) {
-                    sc[, i] <- c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH)
+                    sc[, i] <- c((z * p_by[id, ]) %*% wGH)
                 } else {
-                    sc[i] <- sum(c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH), na.rm = TRUE)
+                    sc[i] <- sum(c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH), 
+                                 na.rm = TRUE)
                 }
             }
             - sc
         } else {
             z <- score_phis_fun(y, mu_y, phis, eta_zi)
             if (i_contributions) {
-                -c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH)
+                -c((z * p_by[id, ]) %*% wGH)
             } else {
                 -sum(c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH), na.rm = TRUE)
             }
@@ -194,11 +189,11 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
             (l1 - l2) / (2 * 1e-03)
         }
         ncx_zi <- ncol(X_zi)
-        sc <- if (i_contributions) matrix(0.0, n, ncx_zi) else numeric(ncx_zi)
+        sc <- if (i_contributions) matrix(0.0, NN, ncx_zi) else numeric(ncx_zi)
         for (l in seq_len(ncx_zi)) {
-            cc <- drop(rowsum(X_zi[, l] * z, id, reorder = FALSE))
+            cc <- drop(rowsum(X_zi[, l] * drop(z), id, reorder = FALSE))
             if (i_contributions) {
-                sc[, l] <- c((cc * p_by) %*% wGH)
+                sc[, l] <- c((X_zi[, l] * drop(z) * p_by[id, ]) %*% wGH)
             } else {
                 sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
             }
@@ -275,7 +270,7 @@ score_betas <- function (betas, y, N, X, id, offset, phis, Ztb, eta_zi, p_by, wG
             z <- score_eta_fun(y, mu_y, phis, eta_zi)
             for (l in seq_len(ncx)) {
                 cc <- drop(rowsum(X[, l] * z, id, reorder = FALSE))
-                sc[l] <- sum(c((cc * p_by) %*% wGH))
+                sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
             }
             - sc
         } else {
@@ -284,7 +279,7 @@ score_betas <- function (betas, y, N, X, id, offset, phis, Ztb, eta_zi, p_by, wG
             z <- (l1 - l2) / (2 * 1e-05)
             for (l in seq_len(ncx)) {
                 cc <- drop(rowsum(X[, l] * z, id, reorder = FALSE))
-                sc[l] <- sum(c((cc * p_by) %*% wGH))
+                sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
             }
             - sc
         }
@@ -295,7 +290,7 @@ score_betas <- function (betas, y, N, X, id, offset, phis, Ztb, eta_zi, p_by, wG
             sc <- numeric(ncx)
             for (l in seq_len(ncx)) {
                 cc <- rowsum(X[, l] * mu_y, id, reorder = FALSE)
-                sc[l] <- sum(c((cc * p_by) %*% wGH))
+                sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
             }
             - Xty + sc
         } else {
@@ -739,7 +734,7 @@ hurdle.lognormal <- function () {
         out
     }
     simulate <- function (n, mu, phis, eta_zi) {
-        y <- rnorm(n = n, mean = mu, sd = exp(phis))
+        y <- rlnorm(n = n, meanlog = mu, sdlog = exp(phis))
         y[as.logical(rbinom(n, 1, plogis(eta_zi)))] <- 0
         y
     }
@@ -784,8 +779,87 @@ beta.fam <- function () {
         comp3 <- log(1 - y) * mu1
         (comp1 + comp2 + comp3) * phi
     }
+    simulate <- function (n, mu, phis, eta_zi) {
+        phi <- exp(phis)
+        rbeta(n, shape1 = mu * phi, shape2 = phi * (1 - mu))
+    }
     structure(list(family = "beta", link = stats$name, linkfun = stats$linkfun,
                    linkinv = stats$linkinv, log_dens = log_dens, 
                    score_eta_fun = score_eta_fun, score_phis_fun = score_phis_fun),
               class = "family")
 }
+
+hurdle.beta.fam <- function () {
+    stats <- make.link("logit")
+    log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
+        phi <- exp(phis)
+        # binary indicator for y > 0
+        ind <- y > 0
+        # non-zero part
+        eta <- as.matrix(eta)
+        eta_zi <- as.matrix(eta_zi)
+        out <- eta
+        mu <- mu_fun(eta)
+        mu_phi <- mu * phi
+        comp1 <- lgamma(phi) - lgamma(mu_phi)
+        comp2 <- (mu_phi - 1) * log(y) - lgamma(phi - mu_phi)
+        comp3 <- (phi - mu_phi - 1) * log(1 - y)
+        out[ind, ] <- plogis(eta_zi[ind, ], lower.tail = FALSE, log.p = TRUE) + 
+            comp1[ind, ] + comp2[ind, ] + comp3[ind, ]
+        # zero part
+        out[!ind, ] <- plogis(eta_zi[!ind, ], log.p = TRUE)
+        attr(out, "mu_y") <- eta
+        out
+    }
+    score_eta_fun <- function (y, mu, phis, eta_zi) {
+        phi <- exp(phis)
+        # binary indicator for y > 0
+        ind <- y > 0
+        # non-zero part
+        mu <- as.matrix(mu)
+        mu_phi <- mu * phi
+        out <- mu
+        comp1 <- - digamma(mu_phi) * phi
+        comp2 <- phi * (log(y) + digamma(phi - mu_phi))
+        comp3 <- - phi * log(1 - y)
+        mu.eta <- mu - mu * mu
+        out[!ind, ] <- 0
+        out[ind, ] <- (comp1[ind, ] + comp2[ind, ] + comp3[ind]) * mu.eta[ind, ]
+        out
+    }
+    score_eta_zi_fun <- function (y, mu, phis, eta_zi) {
+        ind <- y > 0
+        probs <- plogis(as.matrix(eta_zi))
+        out <- 1 - probs
+        out[ind, ] <- - probs[ind, ]
+        out
+    }
+    score_phis_fun <- function (y, mu, phis, eta_zi) {
+        phi <- exp(phis)
+        # binary indicator for y > 0
+        ind <- y > 0
+        # non-zero part
+        mu <- as.matrix(mu)
+        mu_phi <- mu * phi
+        mu1 <- 1 - mu
+        out <- mu
+        comp1 <- digamma(phi) - digamma(mu_phi) * mu
+        comp2 <- mu * log(y) - digamma(phi - mu_phi) * mu1
+        comp3 <- log(1 - y) * mu1
+        out[ind, ] <- (comp1[ind, ] + comp2[ind, ] + comp3[ind, ]) * phi
+        out[!ind, ] <- 0
+        out
+    }
+    simulate <- function (n, mu, phis, eta_zi) {
+        phi <- exp(phis)
+        y <- rbeta(n, shape1 = mu * phi, shape2 = phi * (1 - mu))
+        y[as.logical(rbinom(n, 1, plogis(eta_zi)))] <- 0
+        y
+    }
+    structure(list(family = "hurdle beta", link = stats$name, 
+                   linkfun = stats$linkfun, linkinv = stats$linkinv, log_dens = log_dens,
+                   score_eta_fun = score_eta_fun, score_eta_zi_fun = score_eta_zi_fun,
+                   score_phis_fun = score_phis_fun, simulate = simulate),
+              class = "family")
+}
+

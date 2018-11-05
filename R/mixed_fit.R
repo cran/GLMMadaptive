@@ -72,10 +72,12 @@ mixed_fit <- function (y, X, Z, X_zi, Z_zi, id, offset, offset_zi, family,
                      "divergence of the optimization algorithm, indicating that an overly\n",
                      "complex model is fitted to the data. For example, this could be\n",
                      "caused when including random-effects terms (e.g., in the\n", 
-                     "zero-inflated part) that you do not need.\n")
+                     "zero-inflated part) that you do not need. Otherwise, adjust the\n",
+                     "'max_coef_value' control argument.\n")
     large_shape_mgs <- paste("A value greater than 22000 has been detected for the shape/size\n",
                              "parameter of the negative binomial distribution. This typically\n",
-                             "indicates that the Poisson model would be better.\n")
+                             "indicates that the Poisson model would be better. Otherwise,\n",
+                             "adjust the 'max_phis_value' control argument.")
     if (iter_EM > 0) {
         Params <- matrix(0.0, iter_EM, nparams)
         GH <- GHfun(post_modes, y_lis, N_lis, X_lis, Z_lis, offset_lis, X_zi_lis, Z_zi_lis, 
@@ -227,7 +229,7 @@ mixed_fit <- function (y, X, Z, X_zi, Z_zi, id, offset, offset_zi, family,
         list_thetas <- c(list_thetas, list(gammas = gammas))
     }
     tht <- unlist(as.relistable(list_thetas))
-    if (!converged) {
+    if (!converged && control$iter_qN_outer > 0) {
         # start quasi-Newton iterations
         if (control$verbose) {
             cat("\nStart quasi-Newton iterations...\n\n")
@@ -240,12 +242,20 @@ mixed_fit <- function (y, X, Z, X_zi, Z_zi, id, offset, offset_zi, family,
                      reltol = control$tol3,
                      parscale = rep(c(control$parscale_betas, control$parscale_D,
                                       control$parscale_phis, control$parscale_gammas), ns))
+        optFun <- if (control$optimParallel) optimParallel::optimParallel else stats::optim
+        if (control$optimParallel) {
+            cl <- parallel::makeCluster(2)
+            parallel::setDefaultCluster(cl = cl)
+            parallel::clusterExport(cl = cl, envir = environment(), 
+                                    varlist = list("chol_transf", "deriv_D", "jacobian2",
+                                                   "dmvt", "dmvnorm"))
+        }
         for (it in seq_len(control$iter_qN_outer)) {
             GH <- GHfun(post_modes, y_lis, N_lis, X_lis, Z_lis, offset_lis, X_zi_lis, 
                         Z_zi_lis, offset_zi_lis, betas, solve(D), phis, gammas, nAGQ, nRE, 
                         canonical, user_defined, Zty_lis, log_dens, mu_fun, var_fun, 
                         mu.eta_fun, score_eta_fun, score_phis_fun, score_eta_zi_fun)
-            opt <- optim(tht, logLik_mixed, score_mixed, method = control$optim_method,
+            opt <- optFun(tht, logLik_mixed, score_mixed, method = control$optim_method,
                          control = ctrl, id = id, y = y, N = N, X = X, Z = Z, 
                          offset = offset, X_zi = X_zi, Z_zi = Z_zi, offset_zi = offset_zi, 
                          GH = GH, canonical = canonical, user_defined = user_defined, 
@@ -276,6 +286,9 @@ mixed_fit <- function (y, X, Z, X_zi, Z_zi, id, offset, offset_zi, family,
             }
             ctrl$maxit <- ctrl$maxit + control$iter_qN_incr
             if (control$verbose) cat("\n")
+        }
+        if (control$optimParallel) {
+            parallel::stopCluster(cl)
         }
     }
     list_thetas <- list(betas = betas, D = if (diag_D) log(diag(D)) else chol_transf(D))

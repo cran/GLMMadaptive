@@ -53,6 +53,12 @@ mixed_model <- function (fixed, random, data, family, na.action = na.exclude,
     id <- match(id_orig, unique(id_orig))
     ###########################
     # Zero inflation part
+    if (family$family %in% c("zero-inflated poisson", "zero-inflated negative binomial",
+                             "hurdle poisson", "hurdle negative binomial", "hurdle beta") && 
+        is.null(zi_fixed)) {
+        stop("you have defined a family with an extra zero-part;\nat least argument ",
+             "'zi_fixed' needs to be defined, and potentially also argument 'zi_random'.")
+    }
     if (!is.null(zi_fixed)) {
         if (!is.null(na_exclude)) 
             mfX_zi <- mfX_zi[-na_exclude, ]
@@ -85,7 +91,7 @@ mixed_model <- function (fixed, random, data, family, na.action = na.exclude,
                 parscale_phis = 0.01, parscale_gammas = 0.01, tol1 = 1e-03, tol2 = 1e-04, 
                 tol3 = 1e-07, numeric_deriv = "fd", nAGQ = if (nRE < 3) 11 else 7, 
                 update_GH_every = 10, max_coef_value = 10, max_phis_value = exp(10), 
-                verbose = FALSE)
+                verbose = FALSE, optimParallel = FALSE)
     control <- c(control, list(...))
     namC <- names(con)
     con[(namc <- names(control))] <- control
@@ -173,7 +179,7 @@ mixed_model <- function (fixed, random, data, family, na.action = na.exclude,
     if (has_phis) {
         if (family$family %in% c("negative binomial", "zero-inflated negative binomial",
                                  "hurdle negative binomial", "hurdle log-normal",
-                                 "beta")) {
+                                 "beta", "hurdle beta")) {
             n_phis <- 1
         } else if (is.null(n_phis)) {
             stop("argument 'n_phis' needs to be specified.\n")
@@ -238,6 +244,8 @@ mixed_model <- function (fixed, random, data, family, na.action = na.exclude,
     out$control <- con
     out$Funs <- Funs
     out$family <- family
+    out$na.action <- na.action
+    out$contrasts <- attr(X, "contrasts")
     out$call <- call
     class(out) <- "MixMod"
     out

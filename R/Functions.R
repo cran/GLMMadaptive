@@ -48,7 +48,6 @@ find_modes <- function (b, y_lis, N_lis, X_lis, Z_lis, offset_lis, X_zi_lis, Z_z
                     l2 <- log_dens(y_i, eta_y, mu_fun, phis, eta_zi - 1e-04)
                     c(out, - crossprod(Z_zi_i, (l1 - l2) / (2 * 1e-04)))
                 }
-                 
             }
             out
         } else {
@@ -468,5 +467,24 @@ rmvt <- function (n, mu, Sigma, df) {
     X <- drop(mu) + tcrossprod(evec * rep(sqrt(pmax(ev, 0)), each = p), 
                                matrix(rnorm(n * p), n)) / rep(sqrt(rchisq(n, df)/df), each = p)
     if (n == 1L) drop(X) else t.default(X)
+}
+
+register_s3_method <- function (pkg, generic, class) {
+    fun <- get(paste0(generic, ".", class), envir = parent.frame())
+    if (isNamespaceLoaded(pkg))
+        registerS3method(generic, class, fun, envir = asNamespace(pkg))
+    # Also ensure registration is done if pkg is loaded later:
+    setHook(
+        packageEvent(pkg, "onLoad"),
+        function (...)
+            registerS3method(generic, class, fun, envir = asNamespace(pkg))
+    )
+}
+
+.onLoad <- function (libname, pkgname) {
+    if (requireNamespace("emmeans", quietly = TRUE)) {
+        register_s3_method("emmeans", "recover_data", "MixMod")
+        register_s3_method("emmeans", "emm_basis", "MixMod")
+    }
 }
 

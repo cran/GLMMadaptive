@@ -40,6 +40,12 @@ object.
 - Hurdle Poisson and negative binomial models using the `hurdle.poisson()` and 
 `hurdle.negative.binomial()` family objects.
 
+- Two-part/hurdle mixed models for semi-continuous normal data using the 
+`hurdle.lognormal()` family objects.
+
+- Beta and hurdle Beta mixed effects models using `beta.fam()` and `hurdle.beta.fam()` 
+family objects.
+
 - Users may also specify their own log-density function for the repeated measurements 
 response variable, and the internal algorithms will take care of the optimization.
 
@@ -84,7 +90,7 @@ devtools::install_github("drizopoulos/GLMMadaptive")
 
 and with vignettes
 ```r
-devtools::install_github("drizopoulos/GLMMadaptive", build_vignettes = TRUE)
+devtools::install_github("drizopoulos/GLMMadaptive", build_opts = NULL)
 ```
 
 Hex-sticker courtesy of Greg Papageorgiou [@gr_papageorgiou](https://twitter.com/gr_papageorgiou).
