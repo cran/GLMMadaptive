@@ -67,7 +67,7 @@ head(coef(fm))
 marginal_coefs(fm)
 
 ## ---- eval = FALSE-------------------------------------------------------
-#  marginal_coefs(fm, std_errors = TRUE)
+#  marginal_coefs(fm, std_errors = TRUE, cores = 5)
 
 ## ------------------------------------------------------------------------
 head(fitted(fm))
@@ -85,7 +85,7 @@ nDF <- with(DF, expand.grid(time = seq(min(time), max(time), length.out = 15),
 ## ------------------------------------------------------------------------
 plot_data <- effectPlotData(fm, nDF)
 
-## ---- fig.show="hold"----------------------------------------------------
+## ---- fig.show = "hold", fig.align = "center", fig.width = 8.5, fig.height = 7.5----
 library("lattice")
 xyplot(pred + low + upp ~ time | sex, data = plot_data,
        type = "l", lty = c(1, 2, 2), col = c(2, 1, 1), lwd = 2,
@@ -96,8 +96,8 @@ xyplot(expit(pred) + expit(low) + expit(upp) ~ time | sex, data = plot_data,
        type = "l", lty = c(1, 2, 2), col = c(2, 1, 1), lwd = 2,
        xlab = "Follow-up time", ylab = "Subject-Specific Probabilities")
 
-## ---- eval = FALSE-------------------------------------------------------
-#  plot_data_m <- effectPlotData(fm, nDF, marginal = TRUE, cores = 4)
+## ---- fig.align = "center", fig.width = 8.5, fig.height = 7.5, eval = FALSE----
+#  plot_data_m <- effectPlotData(fm, nDF, marginal = TRUE)
 #  
 #  # we put the two groups in the same panel
 #  my.panel.bands <- function(x, y, upper, lower, fill, col, subscripts, ..., font,
@@ -112,15 +112,26 @@ xyplot(expit(pred) + expit(low) + expit(upp) ~ time | sex, data = plot_data,
 #         type = "l", col = c("blue", "red"),
 #         fill = c("#0000FF80", "#FF000080"),
 #         panel = function (x, y, ...) {
-#             panel.superpose(x, y, panel.groups = 'my.panel.bands', ...)
+#             panel.superpose(x, y, panel.groups = my.panel.bands, ...)
 #             panel.xyplot(x, y, lwd = 2,  ...)
 #  }, xlab = "Follow-up time", ylab = "Marginal Probabilities")
 
-## ------------------------------------------------------------------------
-gm <- mixed_model(fixed = y ~ sex * time, random = ~ time || id, data = DF,
-                  family = binomial())
+## ---- fig.align = "center", fig.width = 8.5, fig.height = 7.5, message = FALSE----
+library("effects")
+plot(predictorEffect("time", fm), type = "link")
 
-anova(gm, fm)
+## ---- fig.align = "center", fig.width = 8.5, fig.height = 7.5, message = FALSE----
+plot(predictorEffect("time", fm), type = "response")
+
+## ---- eval = FALSE-------------------------------------------------------
+#  gm <- mixed_model(fixed = y ~ sex * time, random = ~ time || id, data = DF,
+#                    family = binomial())
+#  
+#  anova(gm, fm)
+#  #>
+#  #>       AIC    BIC log.Lik  LRT df p.value
+#  #> gm 730.94 746.57 -359.47
+#  #> fm 731.66 731.66 -358.83 1.29  1  0.2564
 
 ## ------------------------------------------------------------------------
 pred_DF <- DF[DF$id == 1, ][1:4, ]

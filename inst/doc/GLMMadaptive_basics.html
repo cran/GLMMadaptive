@@ -12,14 +12,14 @@
 
 <meta name="author" content="Dimitris Rizopoulos" />
 
-<meta name="date" content="2018-11-05" />
+<meta name="date" content="2019-01-29" />
 
 <title>GLMMadaptive Basics</title>
 
 
 
 <style type="text/css">code{white-space: pre;}</style>
-<style type="text/css">
+<style type="text/css" data-origin="pandoc">
 div.sourceCode { overflow-x: auto; }
 table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
   margin: 0; padding: 0; vertical-align: baseline; border: none; }
@@ -55,7 +55,29 @@ code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
 code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
 code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
 code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+
 </style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' || rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
 
 
 
@@ -70,7 +92,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">GLMMadaptive Basics</h1>
 <h4 class="author"><em>Dimitris Rizopoulos</em></h4>
-<h4 class="date"><em>2018-11-05</em></h4>
+<h4 class="date"><em>2019-01-29</em></h4>
 
 
 <div id="TOC">
@@ -153,18 +175,18 @@ DF<span class="op">$</span>y &lt;-<span class="st"> </span><span class="kw">rbin
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Fit statistics:</span>
 <span class="co">#&gt;    log.Lik      AIC      BIC</span>
-<span class="co">#&gt;  -374.5197 759.0395 772.0653</span>
+<span class="co">#&gt;  -374.5197 759.0394 772.0653</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Random effects covariance matrix:</span>
 <span class="co">#&gt;               StdDev</span>
-<span class="co">#&gt; (Intercept) 2.064578</span>
+<span class="co">#&gt; (Intercept) 2.064622</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Fixed effects:</span>
 <span class="co">#&gt;                Estimate Std.Err z-value  p-value</span>
-<span class="co">#&gt; (Intercept)     -2.6162  0.4447 -5.8837  &lt; 1e-04</span>
-<span class="co">#&gt; sexfemale       -1.3234  0.6435 -2.0567 0.039714</span>
-<span class="co">#&gt; time             0.2850  0.0395  7.2077  &lt; 1e-04</span>
-<span class="co">#&gt; sexfemale:time   0.0401  0.0545  0.7356 0.461982</span>
+<span class="co">#&gt; (Intercept)     -2.6182  0.4448 -5.8862  &lt; 1e-04</span>
+<span class="co">#&gt; sexfemale       -1.3242  0.6436 -2.0575 0.039639</span>
+<span class="co">#&gt; time             0.2851  0.0396  7.2089  &lt; 1e-04</span>
+<span class="co">#&gt; sexfemale:time   0.0402  0.0545  0.7372 0.461005</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Integration:</span>
 <span class="co">#&gt; method: adaptive Gauss-Hermite quadrature rule</span>
@@ -186,13 +208,22 @@ models &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="s
 
 <span class="kw">sapply</span>(models, extract)
 <span class="co">#&gt;                       nAGQ=11       nAGQ=15      nAGQ=21</span>
-<span class="co">#&gt; (Intercept)       -2.61624891   -2.61601552   -2.6160838</span>
-<span class="co">#&gt; sexfemale         -1.32341472   -1.32337720   -1.3233880</span>
-<span class="co">#&gt; time               0.28503221    0.28513076    0.2851331</span>
-<span class="co">#&gt; sexfemale:time     0.04005485    0.04011138    0.0401111</span>
-<span class="co">#&gt; var_(Intercept)    4.26248278    4.26261536    4.2627503</span>
-<span class="co">#&gt; logLik          -374.51974940 -374.51986569 -374.5198354</span></code></pre></div>
-<p>We observe rather stable model with virtually no differences between the different choices of quadrature points.</p>
+<span class="co">#&gt; (Intercept)       -2.61816557   -2.61679077   -2.6168440</span>
+<span class="co">#&gt; sexfemale         -1.32418678   -1.32349829   -1.3235049</span>
+<span class="co">#&gt; time               0.28514773    0.28501148    0.2850151</span>
+<span class="co">#&gt; sexfemale:time     0.04015372    0.04020003    0.0401995</span>
+<span class="co">#&gt; var_(Intercept)    4.26266211    4.26351799    4.2636311</span>
+<span class="co">#&gt; logLik          -374.51972108 -374.51983340 -374.5198046</span></code></pre></div>
+<p>We observe a rather stable model with virtually no differences between the different choices of quadrature points.</p>
+<p>We first compare the model with a simple logistic regression that does not include any random effects:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">km &lt;-<span class="st"> </span><span class="kw">glm</span>(y <span class="op">~</span><span class="st"> </span>sex <span class="op">*</span><span class="st"> </span>time, <span class="dt">data =</span> DF, <span class="dt">family =</span> <span class="kw">binomial</span>())
+
+<span class="kw">anova</span>(fm1, km)
+<span class="co">#&gt; </span>
+<span class="co">#&gt;        AIC    BIC log.Lik    LRT df p.value</span>
+<span class="co">#&gt; fm1 759.04 772.07 -374.52                  </span>
+<span class="co">#&gt; km  919.11 919.11 -455.55 162.07  1 &lt;0.0001</span></code></pre></div>
+<p>We obtain a highly significant p-value suggesting that there are correlations in the data that cannot be ignored. <em>Note:</em> the <code>anova()</code> method that performs the likelihood ratio test calculates the p-value using the standard <span class="math inline">\(\chi^2\)</span> distribution, here with one degree of freedom. However, because the null hypothesis for testing variance parameters is on the boundary of the corresponding parameter space, it would be more appropriate to use a mixture of <span class="math inline">\(\chi^2\)</span> distributions.</p>
 <p>We extend model <code>fm1</code> by also including a random slopes term; however, we assume that the covariance between the random intercepts and random slopes is zero. This is achieved by using the <code>||</code> symbol in the specification of the <code>random</code> argument, i.e.,</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">fm2 &lt;-<span class="st"> </span><span class="kw">mixed_model</span>(<span class="dt">fixed =</span> y <span class="op">~</span><span class="st"> </span>sex <span class="op">*</span><span class="st"> </span>time, <span class="dt">random =</span> <span class="op">~</span><span class="st"> </span>time <span class="op">||</span><span class="st"> </span>id, <span class="dt">data =</span> DF,
                    <span class="dt">family =</span> <span class="kw">binomial</span>())</code></pre></div>
@@ -202,15 +233,11 @@ models &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="s
 <span class="co">#&gt;        AIC    BIC log.Lik  LRT df p.value</span>
 <span class="co">#&gt; fm1 759.04 772.07 -374.52                </span>
 <span class="co">#&gt; fm2 730.94 730.94 -359.47 30.1  1 &lt;0.0001</span></code></pre></div>
-<p>The results suggest that we need the random slopes term. We continue by testing whether the covariance between the random effects terms is zero. The model under the alternative hypothesis is:</p>
+<p>The results suggest that we need the random slopes term. We continue by testing whether the covariance between the random effects terms is zero. The model under the alternative hypothesis is (results not shown):</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">fm3 &lt;-<span class="st"> </span><span class="kw">mixed_model</span>(<span class="dt">fixed =</span> y <span class="op">~</span><span class="st"> </span>sex <span class="op">*</span><span class="st"> </span>time, <span class="dt">random =</span> <span class="op">~</span><span class="st"> </span>time <span class="op">|</span><span class="st"> </span>id, <span class="dt">data =</span> DF,
                    <span class="dt">family =</span> <span class="kw">binomial</span>())</code></pre></div>
-<p>And again the likelihood ratio test is performed by a call to <code>anova()</code>:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">anova</span>(fm2, fm3)
-<span class="co">#&gt; </span>
-<span class="co">#&gt;        AIC    BIC log.Lik  LRT df p.value</span>
-<span class="co">#&gt; fm2 730.94 746.57 -359.47                </span>
-<span class="co">#&gt; fm3 731.66 731.66 -358.83 1.29  1  0.2566</span></code></pre></div>
+<p>And again the likelihood ratio test is performed by a call to <code>anova()</code> (results not shown):</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">anova</span>(fm2, fm3)</code></pre></div>
 <p>The results now suggest that indeed the covariance between the two random effects terms is not statistically different from zero.</p>
 </div>
 <div id="penalized-mixed-effects-poisson-regression" class="section level2">
@@ -259,18 +286,18 @@ DF<span class="op">$</span>y &lt;-<span class="st"> </span><span class="kw">rpoi
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Fit statistics:</span>
 <span class="co">#&gt;    log.Lik      AIC      BIC</span>
-<span class="co">#&gt;  -2790.338 5590.675 5603.701</span>
+<span class="co">#&gt;  -2782.331 5574.663 5587.689</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Random effects covariance matrix:</span>
-<span class="co">#&gt;               StdDev</span>
-<span class="co">#&gt; (Intercept) 1.185021</span>
+<span class="co">#&gt;                StdDev</span>
+<span class="co">#&gt; (Intercept) 0.9785518</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Fixed effects:</span>
-<span class="co">#&gt;                Estimate Std.Err  z-value  p-value</span>
-<span class="co">#&gt; (Intercept)      3.0355  0.7634   3.9765  &lt; 1e-04</span>
-<span class="co">#&gt; sexfemale       -0.7930  0.4598  -1.7248 0.084564</span>
-<span class="co">#&gt; time             0.2403  0.0016 151.2794  &lt; 1e-04</span>
-<span class="co">#&gt; sexfemale:time  -0.0510  0.0028 -18.3911  &lt; 1e-04</span>
+<span class="co">#&gt;                Estimate Std.Err  z-value   p-value</span>
+<span class="co">#&gt; (Intercept)      2.9461  0.3091   9.5316   &lt; 1e-04</span>
+<span class="co">#&gt; sexfemale       -0.8651  0.2711  -3.1913 0.0014162</span>
+<span class="co">#&gt; time             0.2404  0.0016 151.3470   &lt; 1e-04</span>
+<span class="co">#&gt; sexfemale:time  -0.0511  0.0028 -18.3994   &lt; 1e-04</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Integration:</span>
 <span class="co">#&gt; method: adaptive Gauss-Hermite quadrature rule</span>
@@ -284,10 +311,10 @@ DF<span class="op">$</span>y &lt;-<span class="st"> </span><span class="kw">rpoi
                    <span class="dt">family =</span> <span class="kw">poisson</span>(), <span class="dt">penalized =</span> <span class="ot">TRUE</span>)</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">cbind</span>(<span class="st">'unpenalized'</span> =<span class="st"> </span><span class="kw">fixef</span>(gm1), <span class="st">'penalized'</span> =<span class="st"> </span><span class="kw">fixef</span>(gm2))
 <span class="co">#&gt;                unpenalized   penalized</span>
-<span class="co">#&gt; (Intercept)     3.03545929  2.94238986</span>
-<span class="co">#&gt; sexfemale      -0.79302156 -0.82073289</span>
-<span class="co">#&gt; time            0.24028826  0.24043929</span>
-<span class="co">#&gt; sexfemale:time -0.05104033 -0.05118503</span></code></pre></div>
+<span class="co">#&gt; (Intercept)     2.94614349  2.94238986</span>
+<span class="co">#&gt; sexfemale      -0.86510298 -0.82073289</span>
+<span class="co">#&gt; time            0.24039622  0.24043929</span>
+<span class="co">#&gt; sexfemale:time -0.05106264 -0.05118503</span></code></pre></div>
 <p>In this example we observe small differences between the penalized and unpenalized models. The users have the option to alter the specification of the Student’s t penalty by directly specifying the mean, scale and degrees of freedom arguments of the distribution. For example, a ridge penalty could be placed by setting the degrees of freedom to a high value. The call in this case should be:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">gm3 &lt;-<span class="st"> </span><span class="kw">mixed_model</span>(<span class="dt">fixed =</span> y <span class="op">~</span><span class="st"> </span>sex <span class="op">*</span><span class="st"> </span>time, <span class="dt">random =</span> <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">|</span><span class="st"> </span>id, <span class="dt">data =</span> DF,
                    <span class="dt">family =</span> <span class="kw">poisson</span>(), 

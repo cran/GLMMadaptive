@@ -36,10 +36,13 @@ print.MixMod <- function (x, digits = max(4, getOption("digits") - 4), ...) {
         print(x$gammas)
     }
     if (!is.null(x$phis)) {
-        if (x$family$family %in% c("negative binomial", "zero-inflated negative binomial")) 
+        if (x$family$family %in% c("negative binomial", "zero-inflated negative binomial")) {
             cat("\ndispersion parameter:\n", exp(x$phis), "\n")
-        else
+        } else if (x$family$family %in% c("hurdle log-normal")) {
+            cat("\nResidual std. dev.:\n", exp(x$phis), "\n")
+        } else {
             cat("\nphi parameters:\n", x$phis, "\n")
+        }
     }
     cat("\nlog-Lik:", x$logLik)
     cat("\n\n")
@@ -63,7 +66,7 @@ vcov.MixMod <- function (object, parm = c("all", "fixed-effects", "var-cov","ext
     }
     if (parm == "fixed-effects") {
         n_betas <- length(object$coefficients)
-        return(V[seq_len(n_betas), seq_len(n_betas)])
+        return(V[seq_len(n_betas), seq_len(n_betas), drop = FALSE])
     }
     if (parm == "var-cov") {
         D <- object$D
@@ -93,7 +96,7 @@ vcov.MixMod <- function (object, parm = c("all", "fixed-effects", "var-cov","ext
         } else {
             gammas <- object$gammas
             ind_gammas <- grep("zi_", colnames(V), fixed = TRUE)
-            return(V[ind_gammas, ind_gammas])
+            return(V[ind_gammas, ind_gammas, drop = FALSE])
         }
     }
 }
@@ -159,7 +162,7 @@ summary.MixMod <- function (object, sandwich = FALSE, ...) {
     betas <- fixef(object)
     n_betas <- length(betas)
     V <- vcov(object, sandwich = sandwich)
-    var_betas <- V[seq_len(n_betas), seq_len(n_betas)]
+    var_betas <- V[seq_len(n_betas), seq_len(n_betas), drop = FALSE]
     ses <- sqrt(diag(var_betas))
     D <- object$D
     n_D <- length(D[lower.tri(D, TRUE)])
@@ -180,7 +183,7 @@ summary.MixMod <- function (object, sandwich = FALSE, ...) {
     if (!is.null(object$phis)) {
         phis <- object$phis
         ind_phis <- grep("phi_", colnames(V), fixed = TRUE)
-        var_phis <- as.matrix(V[ind_phis, ind_phis])
+        var_phis <- V[ind_phis, ind_phis, drop = FALSE]
         out$phis_table <- cbind("Estimate" = phis, "Std.Err" = sqrt(diag(var_phis)))
     }
     out$control <- object$control
@@ -242,10 +245,13 @@ print.summary.MixMod <- function (x, digits = max(4, getOption("digits") - 4), .
     }
     if (!is.null(x$phis_table)) {
         if (NB <- x$family$family %in% c("negative binomial", "zero-inflated negative binomial",
-                                         "hurdle negative binomial")) 
+                                         "hurdle negative binomial")) {
             cat("\nlog(dispersion) parameter:\n")
-        else
+        } else if (NB <- x$family$family %in% c("hurdle log-normal")) {
+            cat("\nlog(residual std. dev.):\n")
+        } else {
             cat("\nphi parameters:\n")
+        }
         phis_table <- as.data.frame(x$phis_table)
         if (NB) 
             row.names(phis_table) <- " "
@@ -276,7 +282,7 @@ confint.MixMod <- function (object, parm = c("fixed-effects", "var-cov","extra",
     if (parm == "fixed-effects") {
         betas <- fixef(object)
         n_betas <- length(betas)
-        ses_betas <- sqrt(diag(V[seq_len(n_betas), seq_len(n_betas)]))
+        ses_betas <- sqrt(diag(V[seq_len(n_betas), seq_len(n_betas), drop = FALSE]))
         out <- cbind(betas + qnorm((1 - level) / 2) * ses_betas, betas,
                      betas + qnorm((1 + level) / 2) * ses_betas)
     } else if (parm == "var-cov") {
@@ -329,7 +335,7 @@ confint.MixMod <- function (object, parm = c("fixed-effects", "var-cov","extra",
         } else {
             gammas <- object$gammas
             ind_gammas <- grep("zi_", colnames(V), fixed = TRUE)
-            ses_gammas <- sqrt(diag(V[ind_gammas, ind_gammas]))
+            ses_gammas <- sqrt(diag(V[ind_gammas, ind_gammas, drop = FALSE]))
             out <- cbind(gammas + qnorm((1 - level) / 2) * ses_gammas, gammas,
                          gammas + qnorm((1 + level) / 2) * ses_gammas)
         }
@@ -354,10 +360,7 @@ anova.MixMod <- function (object, object2, test = TRUE, L = NULL,
         L1 <- logLik(object2)
         nb0 <- attr(L0, "df")
         nb1 <- attr(L1, "df")
-        df <- nb1 - nb0
-        if (test && df < 0) {
-            stop("'object' should be nested in 'object2'.\n")
-        }
+        df <- abs(nb1 - nb0)
         if (test && df == 0) {
             test <- FALSE
             warning("the two objects represent models with the same number of parameters;",
@@ -375,11 +378,8 @@ anova.MixMod <- function (object, object2, test = TRUE, L = NULL,
                     nam1 = deparse(substitute(object2)), L1 = L1, aic1 = AIC(object2),
                     bic1 = AIC(object2), df = df, test = test)
         if (test) {
-            LRT <- - 2 * (L0 - L1)
+            LRT <- abs(- 2 * (L0 - L1))
             attributes(LRT) <- NULL
-            if (LRT < 0)
-                warning("either the two models are not nested or the model ",
-                        "represented by 'object2' fell on a local maxima.\n")
             out$LRT <- LRT
             out$p.value <- pchisq(LRT, df, lower.tail = FALSE)
         }
@@ -447,7 +447,7 @@ fitted.MixMod <- function (object, type = c("mean_subject", "subject_specific", 
                            link_fun = NULL, ...) {
     type <- match.arg(type)
     X <- model.matrix(object$Terms$termsX, object$model_frames$mfX)
-    eta <- if (type == "mean_subject") {
+    if (type == "mean_subject") {
         betas <- fixef(object)
         eta <- c(X %*% betas)
     } else if (type == "subject_specific") {
@@ -482,7 +482,7 @@ fitted.MixMod <- function (object, type = c("mean_subject", "subject_specific", 
         }
         if (!is.null(offset_zi))
             eta_zi <- eta_zi + offset_zi
-        plogis(eta_zi, lower.tail = FALSE) * mu
+        mu <- plogis(eta_zi, lower.tail = FALSE) * mu
     }
     names(mu) <- rownames(X)
     mu
@@ -526,20 +526,22 @@ marginal_coefs.MixMod <- function (object, std_errors = FALSE, link_fun = NULL,
         if (!is.null(object$offset)) {
             Xbetas <- Xbetas + object$offset
         }
+        id <- match(object$id, unique(object$id))
         nRE <- ncol(Z)
-        n <- nrow(X)
+        N <- nrow(X)
+        n <- length(unique(id))
         eS <- eigen(D, symmetric = TRUE)
         ev <- eS$values
         V <- eS$vectors %*% diag(sqrt(pmax(ev, 0)), nRE)
-        marg_inv_mu <- numeric(n)
+        marg_inv_mu <- numeric(N)
         for (i in seq_len(n)) {
             set.seed(seed + i)
-            b <- t(V %*% t(matrix(rnorm(M * nRE), M, nRE)))
-            Zb <- c(Z[i, , drop = FALSE] %*% t(b))
-            mu <- mu_fun(Xbetas[i] + Zb)
-            marg_inv_mu[i] <- link_fun(mean(mu))
+            id_i <- id == i
+            b <- V %*% t(matrix(rnorm(M * nRE), M, nRE))
+            Zb <- Z[id_i, , drop = FALSE] %*% b 
+            mu <- mu_fun(Xbetas[id_i] + Zb)
+            marg_inv_mu[id_i] <- link_fun(rowMeans(mu))
         }
-        c(solve(crossprod(X), crossprod(X, marg_inv_mu)))
         res <- c(solve(crossprod(X), crossprod(X, marg_inv_mu)))
         names(res) <- names(betas)
         res
@@ -549,7 +551,7 @@ marginal_coefs.MixMod <- function (object, std_errors = FALSE, link_fun = NULL,
         blocks <- split(seq_len(K), rep(seq_len(cores), each = ceiling(K / cores),
                                         length.out = K))
         D <- object$D
-        diag_D <- all(abs(D[lower.tri(D)]) < sqrt(.Machine$double.eps))
+        diag_D <- ncol(D) > 1 && all(abs(D[lower.tri(D)]) < sqrt(.Machine$double.eps))
         list_thetas <- list(betas = betas, D = if (diag_D) log(diag(D)) else chol_transf(D))
         tht <- unlist(as.relistable(list_thetas))
         V <- vcov(object, sandwich = sandwich)
@@ -567,7 +569,7 @@ marginal_coefs.MixMod <- function (object, std_errors = FALSE, link_fun = NULL,
                 set.seed(seed.)
                 new_tht <- relist(MASS::mvrnorm(1, tht, V), skeleton = list_thetas)
                 new_betas <- new_tht$betas
-                new_D <- chol_transf(new_tht$D)
+                new_D <- if (diag_D) diag(exp(new_tht$D), length(new_tht$D)) else chol_transf(new_tht$D)
                 m_betas[b, ] <- compute_marg_coefs(object, XX, new_betas, Z, new_D, M,
                                                    link_fun, seed = seed.)
             }
@@ -604,6 +606,14 @@ print.m_coefs <- function (x, digits = max(4, getOption("digits") - 4), ...) {
     invisible(x)
 }
 
+coef.m_coefs <- function (object, ...) {
+    if (is.null(object$coef_table)) {
+        object$betas
+    } else {
+        object$coef_table
+    }
+}
+
 effectPlotData <- function (object, newdata, level, ...) UseMethod("effectPlotData")
 
 effectPlotData.MixMod <- function (object, newdata, level = 0.95, marginal = FALSE, 
@@ -637,7 +647,7 @@ effectPlotData.MixMod <- function (object, newdata, level = 0.95, marginal = FAL
         on.exit(assign(".Random.seed", R.seed, envir = .GlobalEnv))
         mu_fun <- object$Funs$mu_fun
         betas <- fixef(object)
-        gammas <- fixef(object, sub_model = "zero_inflated")
+        gammas <- fixef(object, sub_model = "zero_part")
         termsX_zi <- object$Terms$termsX_zi
         mfX_zi <- model.frame(termsX_zi, newdata, 
                               xlev = .getXlevels(termsX_zi, object$model_frames$mfX_zi))
@@ -646,7 +656,7 @@ effectPlotData.MixMod <- function (object, newdata, level = 0.95, marginal = FAL
         tht <- unlist(as.relistable(list_thetas))
         V <- vcov(object, sandwich = sandwich)
         ind <- c(seq_len(length(betas)), grep("zi_", colnames(V), fixed = TRUE))
-        V <- V[ind, ind]
+        V <- V[ind, ind, drop = FALSE]
         new_tht <- MASS::mvrnorm(K, tht, V)
         if (marginal) {
             stop("the 'marginal = TRUE' option of effectPlotData() is not yet ", 
@@ -781,6 +791,18 @@ predict.MixMod <- function (object, newdata, newdata2 = NULL,
                 "response variable are returned;\n'type_pred' is set to 'response'.")
         type_pred <- "response"
     }
+    if (missing(newdata)) {
+        newdata <- object$model_frames$mfX
+        combine <- function (mf, newdata) {
+            mf <- object$model_frames$mfX_zi
+            cond <- length(mf) >= 1 && any(ind <- !names(mf) %in% names(newdata))
+            if (cond) cbind(newdata, mf[ind]) else newdata
+        }
+        newdata <- combine(object$model_frames$mfZ, newdata)
+        newdata <- combine(object$model_frames$mfX_zi, newdata)
+        newdata <- combine(object$model_frames$mfZ_zi, newdata)
+        newdata[[object$id_name]] <- object[["id"]]
+    }
     termsX <- delete.response(object$Terms$termsX)
     mfX <- model.frame(termsX, newdata, 
                        xlev = .getXlevels(termsX, object$model_frames$mfX))
@@ -895,7 +917,7 @@ predict.MixMod <- function (object, newdata, newdata2 = NULL,
             }
             phis <- object$phis
             D <- object$D
-            diag_D <- all(abs(D[lower.tri(D)]) < sqrt(.Machine$double.eps))
+            diag_D <- ncol(D) > 1 && all(abs(D[lower.tri(D)]) < sqrt(.Machine$double.eps))
             list_thetas <- list(betas = betas, D = if (diag_D) log(diag(D)) else chol_transf(D))
             if (!is.null(phis)) {
                 list_thetas <- c(list_thetas, list(phis = phis))
@@ -1092,7 +1114,11 @@ predict.MixMod <- function (object, newdata, newdata2 = NULL,
         if (!is.null(na_exclude))
             newdata <- newdata[-na_exclude, ]
         newdata$pred <- pred
+        if (se.fit && type == "marginal") {
+            newdata$se.fit <- se_fit
+        }
         if (se.fit && type == "subject_specific") {
+            newdata$se.fit <- se_fit
             newdata$low <- low
             newdata$upp <- upp
         }
@@ -1105,6 +1131,7 @@ predict.MixMod <- function (object, newdata, newdata2 = NULL,
                 newdata2 <- newdata2[-na_exclude2, ]
             newdata2$pred <- pred2
             if (se.fit && type == "subject_specific") {
+                newdata2$se.fit <- se_fit2
                 newdata2$low <- low2
                 newdata2$upp <- upp2
             }
@@ -1133,8 +1160,10 @@ predict.MixMod <- function (object, newdata, newdata2 = NULL,
     }
 }
 
-simulate.MixMod <- function (object, nsim = 1, seed = NULL, acount_MLEs_var = FALSE, 
-                             sim_fun = NULL, sandwich = FALSE, ...) {
+simulate.MixMod <- function (object, nsim = 1, seed = NULL, 
+                             type = c("subject_specific", "mean_subject"),
+                             acount_MLEs_var = FALSE, sim_fun = NULL, 
+                             sandwich = FALSE, ...) {
     if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) 
         runif(1)
     if (is.null(seed)) 
@@ -1145,6 +1174,7 @@ simulate.MixMod <- function (object, nsim = 1, seed = NULL, acount_MLEs_var = FA
         RNGstate <- structure(seed, kind = as.list(RNGkind()))
         on.exit(assign(".Random.seed", R.seed, envir = .GlobalEnv))
     }
+    type <- match.arg(type)
     if (is.null(sim_fun)) {
         if (object$family$family == "binomial") {
             N <- if ((y <- NCOL(model.response(object$model_frames$mfX))) == 2) 
@@ -1199,7 +1229,7 @@ simulate.MixMod <- function (object, nsim = 1, seed = NULL, acount_MLEs_var = FA
     D <- object$D
     gammas <- object$gammas
     phis <- object$phis
-    diag_D <- all(abs(D[lower.tri(D)]) < sqrt(.Machine$double.eps))
+    diag_D <- ncol(D) > 1 && all(abs(D[lower.tri(D)]) < sqrt(.Machine$double.eps))
     nRE <- ncol(D)
     ind <- vector("logical", nRE)
     ind[grep("zi_", colnames(D), fixed = TRUE, invert = TRUE)] <- TRUE
@@ -1226,6 +1256,8 @@ simulate.MixMod <- function (object, nsim = 1, seed = NULL, acount_MLEs_var = FA
             else chol_transf(new_thetas_i$D)
         }
         b_i <- MASS::mvrnorm(n, rep(0, nRE), D)
+        if (type == "mean_subject")
+            b_i <- b_i * 0
         eta_y <- c(X %*% betas) + rowSums(Z * b_i[id, ind, drop = FALSE])
         if (!is.null(offset))
             eta_y <- eta_y + offset
@@ -1241,47 +1273,88 @@ simulate.MixMod <- function (object, nsim = 1, seed = NULL, acount_MLEs_var = FA
     out
 }
 
-model.matrix.MixMod <- function (object, type = c("fixed", "random"), ...) {
+model.matrix.MixMod <- function (object, type = c("fixed", "random", "zi_fixed", "zi_random"), ...) {
     type <- match.arg(type)
-    if (type == "fixed") {
-        model.matrix(object$Terms$termsX, object$model_frames$mfX)
+    switch(type,
+           "fixed" = model.matrix(object$Terms$termsX, object$model_frames$mfX),
+           "random" = model.matrix(object$Terms$termsZ, object$model_frames$mfZ),
+           "zi_fixed" = model.matrix(object$Terms$termsX_zi, object$model_frames$mfX_zi),
+           "zi_random" = model.matrix(object$Terms$termsZ_zi, object$model_frames$mfZ_zi)
+    )
+}
+
+model.frame.MixMod <- function (formula, type = c("fixed", "random", "zi_fixed", 
+                                                  "zi_random"), ...) {
+    type <- match.arg(type)
+    switch(type, "fixed" = formula$model_frames$mfX, "random" = formula$model_frames$mfZ,
+           "zi_fixed" = formula$model_frames$mfX_zi, 
+           "zi_random" = formula$model_frames$mfZ_zi)
+}
+
+terms.MixMod <- function (x, type = c("fixed", "random", "zi_fixed", "zi_random"), ...) {
+    type <- match.arg(type)
+    switch(type, "fixed" = x$Terms$termsX, "random" = x$Terms$termsZ,
+           "zi_fixed" = x$Terms$termsX_zi, "zi_random" = x$Terms$termsZ_zi)
+}
+
+formula.MixMod <- function (x, type = c("fixed", "random", "zi_fixed", "zi_random"), ...) {
+    type <- match.arg(type)
+    switch(type, "fixed" = eval(x$call$fixed), "random" = eval(x$call$random),
+           "zi_fixed" = eval(x$call$zi_fixed), "zi_random" = eval(x$call$zi_random))
+}
+
+family.MixMod <- function (object, ...) {
+    object$family
+}
+
+nobs.MixMod <- function (object, level = 1,...) {
+    if (level == 0) {
+        length(unique(object$id))
     } else {
-        model.matrix(object$Terms$termsZ, object$model_frames$mfZ)
+        length(object$id)
     }
 }
 
-model.frame.MixMod <- function (formula, type = c("fixed", "random"), ...) {
-    type <- match.arg(type)
-    if (type == "fixed") {
-        formula$model_frames$mfX
-    } else {
-        formula$model_frames$mfZ
-    }
-}
-
-terms.MixMod <- function (x, type = c("fixed", "random"), ...) {
-    type <- match.arg(type)
-    if (type == "fixed") {
-        x$Terms$termsX
-    } else {
-        x$Terms$termsZ
-    }
-}
-
-recover_data.MixMod <- function (object, ...) {
+recover_data.MixMod <- function (object, mode = c("fixed-effects", "zero_part"), ...) {
     fcall <- object$call
-    emmeans::recover_data(fcall, delete.response(terms(object)), object$na.action, ...)
+    mode <- match.arg(mode)
+    if (mode == "fixed-effects") {
+        emmeans::recover_data(fcall, delete.response(terms(object)), object$na.action, 
+                              ...)
+    } else {
+        emmeans::recover_data(fcall, delete.response(terms(object, type = "zi_fixed")), 
+                              object$na.action, ...)
+    }
 }
 
-emm_basis.MixMod <- function (object, trms, xlev, grid, ...) { 
-    m <- model.frame(trms, grid, na.action = na.pass, xlev = xlev)
-    X <- model.matrix(trms, m, contrasts.arg = object$contrasts) 
-    bhat <- fixef(object) 
-    V <- vcov(object, parm = "fixed-effects")
-    nbasis <- matrix(NA) 
-    dfargs <- list(df = Inf)
-    dffun <- function (k, dfargs) dfargs$df
+emm_basis.MixMod <- function (object, trms, xlev, grid, 
+                              mode = c("fixed-effects", "zero_part"), ...) {
+    mode <- match.arg(mode)
+    if (mode == "fixed-effects") {
+        m <- model.frame(trms, grid, na.action = na.pass, xlev = xlev)
+        X <- model.matrix(trms, m, contrasts.arg = object$contrasts) 
+        bhat <- fixef(object, sub_model = "main") 
+        V <- vcov(object, parm = "fixed-effects")
+        nbasis <- matrix(NA) 
+        dfargs <- list(df = Inf)
+        dffun <- function (k, dfargs) dfargs$df
+    } else {
+        trms_zi <- terms(object, type = "zi_fixed")
+        m <- model.frame(trms_zi, grid, na.action = na.pass, xlev = xlev)
+        X <- model.matrix(trms_zi, m, contrasts.arg = object$contrasts) 
+        bhat <- fixef(object, sub_model = "zero_part") 
+        V <- vcov(object, parm = "zero_part")
+        nbasis <- matrix(NA) 
+        dfargs <- list(df = Inf)
+        dffun <- function (k, dfargs) dfargs$df
+    }
     list(X = X, bhat = bhat, nbasis = nbasis, V = V, dffun = dffun, dfargs = dfargs)
+}
+
+Effect.MixMod <- function (focal.predictors, mod, ...) {
+    args <- list(call = mod$call, formula = formula(mod), family = mod$family,
+                 coefficients = fixef(mod), vcov = vcov(mod, parm = "fixed-effects"))
+    effects::Effect.default(focal.predictors, mod, ..., sources = args)
 }
 
 scoring_rules <- function (object, newdata, newdata2 = NULL, max_count = 2000, 

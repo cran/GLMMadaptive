@@ -12,14 +12,14 @@
 
 <meta name="author" content="Dimitris Rizopoulos" />
 
-<meta name="date" content="2018-11-05" />
+<meta name="date" content="2019-01-29" />
 
 <title>Zero-Inflated and Two-Part Mixed Effects Models</title>
 
 
 
 <style type="text/css">code{white-space: pre;}</style>
-<style type="text/css">
+<style type="text/css" data-origin="pandoc">
 div.sourceCode { overflow-x: auto; }
 table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
   margin: 0; padding: 0; vertical-align: baseline; border: none; }
@@ -55,7 +55,29 @@ code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
 code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
 code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
 code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+
 </style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' || rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
 
 
 
@@ -70,7 +92,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Zero-Inflated and Two-Part Mixed Effects Models</h1>
 <h4 class="author"><em>Dimitris Rizopoulos</em></h4>
-<h4 class="date"><em>2018-11-05</em></h4>
+<h4 class="date"><em>2019-01-29</em></h4>
 
 
 <div id="TOC">
@@ -171,24 +193,24 @@ fm2
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Random effects covariance matrix:</span>
 <span class="co">#&gt;                 StdDev    Corr</span>
-<span class="co">#&gt; (Intercept)     0.7391        </span>
-<span class="co">#&gt; zi_(Intercept)  0.7157 -0.6334</span>
+<span class="co">#&gt; (Intercept)     0.7406        </span>
+<span class="co">#&gt; zi_(Intercept)  0.6904 -0.6556</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Fixed effects:</span>
 <span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span>
-<span class="co">#&gt;   1.5902225072  -0.0117290754  -0.0029500093   0.0001046371 </span>
+<span class="co">#&gt;   1.5881570711  -0.0083137636  -0.0030264830   0.0002554746 </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Zero-part coefficients:</span>
 <span class="co">#&gt; (Intercept)   sexfemale </span>
-<span class="co">#&gt;  -1.1201182   0.4416912 </span>
+<span class="co">#&gt;  -1.1103020   0.4282111 </span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt; log-Lik: -2214.306</span></code></pre></div>
+<span class="co">#&gt; log-Lik: -2214.276</span></code></pre></div>
 <p>We test if we need the extra random effect using a likelihood ratio test:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">anova</span>(fm1, fm2)
 <span class="co">#&gt; </span>
 <span class="co">#&gt;         AIC     BIC  log.Lik   LRT df p.value</span>
 <span class="co">#&gt; fm1 4461.87 4480.11 -2223.94                 </span>
-<span class="co">#&gt; fm2 4446.61 4446.61 -2214.31 19.26  2   1e-04</span></code></pre></div>
+<span class="co">#&gt; fm2 4446.55 4446.55 -2214.28 19.32  2   1e-04</span></code></pre></div>
 <p>The results suggest that the extra random effect improves the fit of the model.</p>
 </div>
 <div id="zero-inflated-negative-binomial-mixed-effects-model" class="section level2">
@@ -210,18 +232,18 @@ gm1
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Random effects covariance matrix:</span>
 <span class="co">#&gt;                StdDev</span>
-<span class="co">#&gt; (Intercept) 0.8291406</span>
+<span class="co">#&gt; (Intercept) 0.8293515</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Fixed effects:</span>
 <span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span>
-<span class="co">#&gt;    1.471442764    0.027018363    0.003096235   -0.006574982 </span>
+<span class="co">#&gt;    1.467900626    0.029416703    0.003005305   -0.006440699 </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Zero-part coefficients:</span>
 <span class="co">#&gt; (Intercept)   sexfemale </span>
-<span class="co">#&gt;  -1.5551763   0.5913118 </span>
+<span class="co">#&gt;  -1.5554713   0.5914944 </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; dispersion parameter:</span>
-<span class="co">#&gt;  2.227321 </span>
+<span class="co">#&gt;  2.227075 </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; log-Lik: -1958.746</span></code></pre></div>
 <p>Similarly to <code>fm1</code>, in <code>gm1</code> we specified only fixed effects for the logistic regression for the zero part. We now compare this model with the zero-inflated Poisson model that allowed for a random intercept in the zero part. The comparison can be done with the <code>anova()</code> method; because the two models are not nested, we set <code>test = FALSE</code> in the call to <code>anova()</code>, i.e.:</p>
@@ -229,7 +251,7 @@ gm1
 <span class="co">#&gt; </span>
 <span class="co">#&gt;         AIC     BIC  log.Lik df</span>
 <span class="co">#&gt; gm1 3933.49 3954.33 -1958.75   </span>
-<span class="co">#&gt; fm2 4446.61 4446.61 -2214.31  1</span></code></pre></div>
+<span class="co">#&gt; fm2 4446.55 4446.55 -2214.28  1</span></code></pre></div>
 <p>We observe that accounting for the over-dispersion seems to better improve the fit than including the random intercepts term in the zero part.</p>
 </div>
 <div id="two-part-mixed-effects-model-for-semi-continuous-data" class="section level2">
@@ -319,7 +341,7 @@ DF<span class="op">$</span>y[<span class="kw">as.logical</span>(<span class="kw"
         out
     }
     simulate &lt;-<span class="st"> </span><span class="cf">function</span> (n, mu, phis, eta_zi) {
-        y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dt">n =</span> n, <span class="dt">mean =</span> mu, <span class="dt">sd =</span> <span class="kw">exp</span>(phis))
+        y &lt;-<span class="st"> </span><span class="kw">rlnorm</span>(<span class="dt">n =</span> n, <span class="dt">meanlog =</span> mu, <span class="dt">sdlog =</span> <span class="kw">exp</span>(phis))
         y[<span class="kw">as.logical</span>(<span class="kw">rbinom</span>(n, <span class="dv">1</span>, <span class="kw">plogis</span>(eta_zi)))] &lt;-<span class="st"> </span><span class="dv">0</span>
         y
     }
@@ -407,7 +429,7 @@ rep_y &lt;-<span class="st"> </span><span class="kw">apply</span>(out, <span cla
 <span class="kw">lines</span>(x_vals, <span class="kw">ecdf</span>(y)(x_vals))
 <span class="kw">legend</span>(<span class="st">&quot;bottomright&quot;</span>, <span class="kw">c</span>(<span class="st">&quot;log replicated data&quot;</span>, <span class="st">&quot;log observed data&quot;</span>), <span class="dt">lty =</span> <span class="dv">1</span>, 
        <span class="dt">col =</span> <span class="kw">c</span>(<span class="st">&quot;lightgrey&quot;</span>, <span class="st">&quot;black&quot;</span>), <span class="dt">bty =</span> <span class="st">&quot;n&quot;</span>, <span class="dt">cex =</span> <span class="fl">0.8</span>)</code></pre></div>
-<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p><img src="data:image/png;base64,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" style="display: block; margin: auto;" /></p>
 </div>
 <div id="two-parthurdle-poisson-mixed-effects-model" class="section level2">
 <h2>Two-Part/Hurdle Poisson Mixed Effects Model</h2>
@@ -467,12 +489,12 @@ dm1
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Random effects covariance matrix:</span>
 <span class="co">#&gt;              StdDev    Corr</span>
-<span class="co">#&gt; (Intercept)  0.8227        </span>
-<span class="co">#&gt; time         0.3655 -0.3159</span>
+<span class="co">#&gt; (Intercept)  0.8229        </span>
+<span class="co">#&gt; time         0.3652 -0.3133</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Fixed effects:</span>
 <span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span>
-<span class="co">#&gt;     1.52781877     0.08075223     0.09003660    -0.09189512 </span>
+<span class="co">#&gt;     1.52799681     0.08046775     0.08982336    -0.09129448 </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Zero-part coefficients:</span>
 <span class="co">#&gt; (Intercept)   sexfemale </span>
@@ -497,19 +519,19 @@ dm2
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Random effects covariance matrix:</span>
 <span class="co">#&gt;                 StdDev    Corr        </span>
-<span class="co">#&gt; (Intercept)     0.8226  (Intr)    time</span>
-<span class="co">#&gt; time            0.3634 -0.3136        </span>
-<span class="co">#&gt; zi_(Intercept)  0.6605 -0.0099  0.0724</span>
+<span class="co">#&gt; (Intercept)     0.8227  (Intr)    time</span>
+<span class="co">#&gt; time            0.3636 -0.3135        </span>
+<span class="co">#&gt; zi_(Intercept)  0.6601 -0.0089  0.0698</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Fixed effects:</span>
 <span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span>
-<span class="co">#&gt;     1.52753895     0.08367461     0.09194570    -0.08005393 </span>
+<span class="co">#&gt;     1.52752248     0.08381132     0.09213789    -0.08032932 </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Zero-part coefficients:</span>
 <span class="co">#&gt; (Intercept)   sexfemale </span>
-<span class="co">#&gt;  -1.5382756   0.5176922 </span>
+<span class="co">#&gt;  -1.5386156   0.5177395 </span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt; log-Lik: -2797.309</span></code></pre></div>
+<span class="co">#&gt; log-Lik: -2797.308</span></code></pre></div>
 <p>The likelihood ratio test between the two models is computed with the <code>anova()</code> method:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">anova</span>(dm1, dm2)
 <span class="co">#&gt; </span>
@@ -538,18 +560,18 @@ hm1
 <span class="co">#&gt; Random effects covariance matrix:</span>
 <span class="co">#&gt;              StdDev    Corr</span>
 <span class="co">#&gt; (Intercept)  0.7305        </span>
-<span class="co">#&gt; time         0.3248 -0.1172</span>
+<span class="co">#&gt; time         0.3249 -0.1170</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Fixed effects:</span>
 <span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span>
-<span class="co">#&gt;     1.48476535     0.07146542     0.10191941    -0.08920289 </span>
+<span class="co">#&gt;     1.48250218     0.07508276     0.10249953    -0.08978082 </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Zero-part coefficients:</span>
 <span class="co">#&gt; (Intercept)   sexfemale </span>
 <span class="co">#&gt;  -1.4178427   0.4857483 </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; phi parameters:</span>
-<span class="co">#&gt;  0.677947 </span>
+<span class="co">#&gt;  0.6778918 </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; log-Lik: -2181.468</span></code></pre></div>
 <p>Also for the <code>hurdle.negative.binomial()</code> family only the log-link is implemented. The structure of the output is identical to what we had for the hurdle Poisson model. Again we should note that the fixed-effects coefficients for the positive part have an interpretation for the mean of the entire distribution, not only for the positive counts.</p>
@@ -570,22 +592,22 @@ hm2
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Random effects covariance matrix:</span>
 <span class="co">#&gt;                 StdDev    Corr        </span>
-<span class="co">#&gt; (Intercept)     0.7305  (Intr)    time</span>
-<span class="co">#&gt; time            0.3243 -0.1140        </span>
-<span class="co">#&gt; zi_(Intercept)  0.6648 -0.0520  0.1467</span>
+<span class="co">#&gt; (Intercept)     0.7313  (Intr)    time</span>
+<span class="co">#&gt; time            0.3258 -0.1161        </span>
+<span class="co">#&gt; zi_(Intercept)  0.6610 -0.0522  0.1420</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Fixed effects:</span>
 <span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span>
-<span class="co">#&gt;     1.47815662     0.06708721     0.10517004    -0.08545594 </span>
+<span class="co">#&gt;     1.47626158     0.07041272     0.10539676    -0.08613159 </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Zero-part coefficients:</span>
 <span class="co">#&gt; (Intercept)   sexfemale </span>
-<span class="co">#&gt;   -1.541591    0.519505 </span>
+<span class="co">#&gt;  -1.5425483   0.5193066 </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; phi parameters:</span>
-<span class="co">#&gt;  0.6774959 </span>
+<span class="co">#&gt;  0.6759281 </span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt; log-Lik: -2176.314</span></code></pre></div>
+<span class="co">#&gt; log-Lik: -2176.313</span></code></pre></div>
 <p>The likelihood ratio test between the two models is computed with the <code>anova()</code> method:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">anova</span>(hm1, hm2)
 <span class="co">#&gt; </span>

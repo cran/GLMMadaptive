@@ -20,10 +20,15 @@
 \alias{simulate.MixMod}
 \alias{terms}
 \alias{terms.MixMod}
+\alias{formula}
+\alias{formula.MixMod}
 \alias{model.matrix}
 \alias{model.matrix.MixMod}
 \alias{model.frame}
 \alias{model.frame.MixMod}
+\alias{nobs}
+\alias{nobs.MixMod}
+
 
 \title{
 Various Methods for Standard Generics
@@ -82,20 +87,31 @@ predict(object, \dots)
 simulate(object, nsim = 1, seed = NULL, \dots)
 
 \method{simulate}{MixMod}(object, nsim = 1, seed = NULL, 
+    type = c("subject_specific", "mean_subject"),
     acount_MLEs_var = FALSE, sim_fun = NULL, 
     sandwich = FALSE, \dots)
     
 terms(x, \dots)
 
-\method{terms}{MixMod}(x, type = c("fixed", "random"), \dots)
+\method{terms}{MixMod}(x, type = c("fixed", "random", "zi_fixed", "zi_random"), \dots)
+
+formula(x, \dots)
+
+\method{formula}{MixMod}(x, type = c("fixed", "random", "zi_fixed", "zi_random"), \dots)
+
 
 model.frame(formula, \dots)
 
-\method{model.frame}{MixMod}(formula, type = c("fixed", "random"), \dots)
+\method{model.frame}{MixMod}(formula, type = c("fixed", "random", "zi_fixed", "zi_random"), \dots)
 
 model.matrix(object, \dots)
 
-\method{model.matrix}{MixMod}(object, type = c("fixed", "random"), \dots)
+\method{model.matrix}{MixMod}(object, type = c("fixed", "random", "zi_fixed", "zi_random"), \dots)
+
+nobs(object, \dots)
+
+\method{nobs}{MixMod}(object, level = 1, \dots)
+
 }
 
 \arguments{
@@ -112,7 +128,11 @@ model.matrix(object, \dots)
   parameters in the distribution of the outcome (e.g., the \eqn{\theta} parameter in
   the negative binomial family). Option \code{zero_inflated} corresponds to the 
   coefficients of the zero-inflated sub-model.}
-\item{level}{numeric scalar between 0 and 1 denoting the level of the confidence interval.}
+\item{level}{numeric scalar between 0 and 1 denoting the level of the confidence interval.
+    In the \code{nobs()} method it denotes the level at which the number of observations is
+    counted. The value 0 corresponds to the number of independent sample units 
+    determined by the number of levels of the grouping variable. If set to a value greater
+    than zero, it returns the total number of observations.}
 \item{test}{logical; should a p-value be calculated.}
 \item{L}{a numeric matrix representing a contrasts matrix. This is only used when in 
   \code{anova()} only \code{object} is provided, and it can only be specified for the fixed 

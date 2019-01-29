@@ -14,7 +14,7 @@
 
 <meta name="date" content="2019-01-29" />
 
-<title>Multiple Comparisons for MixMod Objects</title>
+<title>Optimization and Numerical Integration in GLMMadaptive</title>
 
 
 
@@ -90,25 +90,38 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 
 
-<h1 class="title toc-ignore">Multiple Comparisons for MixMod Objects</h1>
+<h1 class="title toc-ignore">Optimization and Numerical Integration in GLMMadaptive</h1>
 <h4 class="author"><em>Dimitris Rizopoulos</em></h4>
 <h4 class="date"><em>2019-01-29</em></h4>
 
 
 <div id="TOC">
 <ul>
-<li><a href="#multiple-comparisons-with-mixmod-objects">Multiple Comparisons with MixMod Objects</a><ul>
-<li><a href="#additive-model">Additive Model</a></li>
-<li><a href="#interaction-model">Interaction Model</a></li>
+<li><a href="#estimation-procedure">Estimation Procedure</a><ul>
+<li><a href="#controlling-the-optimization-and-integration">Controlling the Optimization and Integration</a></li>
 </ul></li>
 </ul>
 </div>
 
-<div id="multiple-comparisons-with-mixmod-objects" class="section level1">
-<h1>Multiple Comparisons with MixMod Objects</h1>
-<p>In this vignette we illustrate how to correct p-values for multiple comparisons using the <a href="https://cran.r-project.org/package=multcomp"><strong>multcomp</strong></a> and <a href="https://cran.r-project.org/package=emmeans"><strong>emmeans</strong></a> packages.</p>
-<div id="additive-model" class="section level2">
-<h2>Additive Model</h2>
+<div id="estimation-procedure" class="section level1">
+<h1>Estimation Procedure</h1>
+<p>As described in vignette GLMMadaptive basics XXX, the log-likelihood function behind the mixed models fitted by <strong>GLMMadaptive</strong> contains an intractable integral over the random effects. In addition, the mode of the log-likelhood function cannot be calculated analytically. Therefore, maximum likelihood estimation requires a combination of numerical integration and optimization.</p>
+<p>For the numerical optimization two, interlinked by default, algorithms are implemented. An EM algorithm in which the random effects are treated as ‘missing data’, and a quasi-Newton algorithm for direct optimization. The EM algorithm is often a more stable algorithm, especially when the initial values are far from the mode of the log-likelihood; however, because it has a linear convergence rate it can be slow reaching the mode. On the other hand, quasi-Newton algorithms typically have a super-linear convergene rate, but they may have trouble if they are initiated far from the mode. For this reason, optimization procedure in <strong>GLMMadaptive</strong> starts with the EM algorithm for a fixed number of iterations that are used as a refinement of the initial values before switching to the quasi-Newton algorithm.</p>
+<p>The numerical integration over the random effects is done using the adaptive Gauss-Hermite quadrature rule. This also requires an optimization step of finding the modes of the complete-data (= observed response variable and unobserved random effects) log-likelihood with respect to the random effects, <em>for each sample unit</em>. To decrease the computational cost, the optimization procedure in <strong>GLMMadaptive</strong> does not locate these modes of the random effects in every iteration but every few iterations of the optimization procedure.</p>
+<p>The <code>control</code> argument of function <code>mixed_model()</code> has a number of arguments that enable the user to determine how the numerical integration and optimization procedure are performed. The relevant arguments are:</p>
+<ul>
+<li><p><code>nAGQ</code> the number of quadrature points; default is 11 for one and two-dimensional random effects vectors, and 7 otherwise.</p></li>
+<li><p><code>iter_EM</code> the number of the firt-phase EM iterations; default is 30.</p></li>
+<li><p><code>update_GH_every</code> every how many EM iterations the modes of the random effects conditional distribution will be located for the adaptive Gauss-Hermite rule; default is 10.</p></li>
+<li><p><code>optimizer</code> sets the optimizer, options are <code>&quot;optim&quot;</code> (default) and <code>&quot;nlminb&quot;</code>.</p></li>
+<li><p><code>optim_method</code> if the optimizer is <code>&quot;optim&quot;</code>, you can set here the algorithm to be used, from the available options of the <code>optim()</code> function.</p></li>
+<li><p><code>iter_qN_outer</code> the number of outer quasi-Newton iterations; every outer quasi-Newton iteration the modes of the random effects conditional distribution are located (i.e., this is the analogous argument for the quasi-Newton phase as the <code>update_GH_every</code> was described above for the EM-phase).</p></li>
+<li><p><code>iter_qN</code> the number of iterations the quasi-Newton algoritm runs for each out iteration; default is 10, but see also the following argument.</p></li>
+<li><p><code>iter_qN_incr</code> the increment in the <code>iter_qN</code> iterations after each outer iteration; default is 10.</p></li>
+<li><p><code>parscale_betas</code>, <code>parscale_D</code>, <code>parscale_phis</code> and <code>parscale_phis</code> vectors of scaling values for the diffirent sets of parameters, with ‘betas’ corresponding to the fixed effects, ‘D’ the unique elements of the covariance matrix of the random effects, ‘phis’ extra dispersion/scale parameters, and ‘gammas’ the fixed effects for the extra zeros-part, relevant for zero-inflated and hurdle models.</p></li>
+</ul>
+<div id="controlling-the-optimization-and-integration" class="section level2">
+<h2>Controlling the Optimization and Integration</h2>
 <p>We start by simulating some data for a binary longitudinal outcome:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">1234</span>)
 n &lt;-<span class="st"> </span><span class="dv">300</span> <span class="co"># number of subjects</span>
@@ -134,139 +147,17 @@ b &lt;-<span class="st"> </span><span class="kw">cbind</span>(<span class="kw">r
 eta_y &lt;-<span class="st"> </span><span class="kw">as.vector</span>(X <span class="op">%*%</span><span class="st"> </span>betas <span class="op">+</span><span class="st"> </span><span class="kw">rowSums</span>(Z <span class="op">*</span><span class="st"> </span>b[DF<span class="op">$</span>id, ]))
 <span class="co"># we simulate binary longitudinal data</span>
 DF<span class="op">$</span>y &lt;-<span class="st"> </span><span class="kw">rbinom</span>(n <span class="op">*</span><span class="st"> </span>K, <span class="dv">1</span>, <span class="kw">plogis</span>(eta_y))</code></pre></div>
-<p>We fit a mixed effects logistic regression for <code>y</code> assuming random intercepts for the random-effects part, and the main effects of <code>sex</code> and <code>time</code> for the fixed-effects part.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">fm &lt;-<span class="st"> </span><span class="kw">mixed_model</span>(<span class="dt">fixed =</span> y <span class="op">~</span><span class="st"> </span>sex <span class="op">+</span><span class="st"> </span>time, <span class="dt">random =</span> <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">|</span><span class="st"> </span>id, <span class="dt">data =</span> DF,
-                  <span class="dt">family =</span> <span class="kw">binomial</span>())</code></pre></div>
-<p>The uncorrected p-values for the 4 time points are give by the <code>summary()</code> method:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(fm)
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Call:</span>
-<span class="co">#&gt; mixed_model(fixed = y ~ sex + time, random = ~1 | id, data = DF, </span>
-<span class="co">#&gt;     family = binomial())</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Data Descriptives:</span>
-<span class="co">#&gt; Number of Observations: 1200</span>
-<span class="co">#&gt; Number of Groups: 300 </span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Model:</span>
-<span class="co">#&gt;  family: binomial</span>
-<span class="co">#&gt;  link: logit </span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Fit statistics:</span>
-<span class="co">#&gt;    log.Lik      AIC      BIC</span>
-<span class="co">#&gt;  -583.4797 1178.959 1201.182</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Random effects covariance matrix:</span>
-<span class="co">#&gt;               StdDev</span>
-<span class="co">#&gt; (Intercept) 1.448263</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Fixed effects:</span>
-<span class="co">#&gt;             Estimate Std.Err z-value    p-value</span>
-<span class="co">#&gt; (Intercept)  -2.2862  0.2496 -9.1590    &lt; 1e-04</span>
-<span class="co">#&gt; sexfemale     0.8854  0.2448  3.6172 0.00029783</span>
-<span class="co">#&gt; timeTime2     0.3066  0.2266  1.3532 0.17599273</span>
-<span class="co">#&gt; timeTime3    -0.5053  0.2463 -2.0517 0.04019725</span>
-<span class="co">#&gt; timeTime4     0.5631  0.2237  2.5176 0.01181581</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Integration:</span>
-<span class="co">#&gt; method: adaptive Gauss-Hermite quadrature rule</span>
-<span class="co">#&gt; quadrature points: 11</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Optimization:</span>
-<span class="co">#&gt; method: hybrid EM and quasi-Newton</span>
-<span class="co">#&gt; converged: TRUE</span></code></pre></div>
-<p>To perform the pairwise comparisons and obtain corrected p-values, we load the <strong>multcomp</strong> package and use the <code>glht()</code> function. Because no specific methods exist for <code>MixMod</code> object returned by <code>mixed_model()</code>, we need to specify the <code>vcov.</code> and <code>coef.</code> arguments of <code>glht()</code>, i.e.,</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&quot;multcomp&quot;</span>)
-<span class="co">#&gt; Loading required package: mvtnorm</span>
-<span class="co">#&gt; Loading required package: survival</span>
-<span class="co">#&gt; Loading required package: TH.data</span>
-<span class="co">#&gt; Warning: package 'TH.data' was built under R version 3.5.2</span>
-<span class="co">#&gt; Loading required package: MASS</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Attaching package: 'MASS'</span>
-<span class="co">#&gt; The following object is masked from 'package:GLMMadaptive':</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt;     negative.binomial</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Attaching package: 'TH.data'</span>
-<span class="co">#&gt; The following object is masked from 'package:MASS':</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt;     geyser</span>
-fm_mc &lt;-<span class="st"> </span><span class="kw">glht</span>(fm, <span class="dt">linfct =</span> <span class="kw">mcp</span>(<span class="dt">time =</span> <span class="st">&quot;Tukey&quot;</span>),
-           <span class="dt">vcov. =</span> <span class="kw">vcov</span>(fm, <span class="st">&quot;fixed&quot;</span>), <span class="dt">coef. =</span> fixef)
-
-<span class="kw">summary</span>(fm_mc)
-<span class="co">#&gt; </span>
-<span class="co">#&gt;   Simultaneous Tests for General Linear Hypotheses</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Multiple Comparisons of Means: Tukey Contrasts</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Fit: mixed_model(fixed = y ~ sex + time, random = ~1 | id, data = DF, </span>
-<span class="co">#&gt;     family = binomial())</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Linear Hypotheses:</span>
-<span class="co">#&gt;                    Estimate Std. Error z value Pr(&gt;|z|)    </span>
-<span class="co">#&gt; Time2 - Time1 == 0   0.3066     0.2266   1.353  0.52820    </span>
-<span class="co">#&gt; Time3 - Time1 == 0  -0.5053     0.2463  -2.052  0.16889    </span>
-<span class="co">#&gt; Time4 - Time1 == 0   0.5631     0.2237   2.518  0.05702 .  </span>
-<span class="co">#&gt; Time3 - Time2 == 0  -0.8119     0.2423  -3.351  0.00463 ** </span>
-<span class="co">#&gt; Time4 - Time2 == 0   0.2565     0.2165   1.185  0.63561    </span>
-<span class="co">#&gt; Time4 - Time3 == 0   1.0684     0.2406   4.441  &lt; 0.001 ***</span>
-<span class="co">#&gt; ---</span>
-<span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span>
-<span class="co">#&gt; (Adjusted p values reported -- single-step method)</span></code></pre></div>
-</div>
-<div id="interaction-model" class="section level2">
-<h2>Interaction Model</h2>
-<p>We continue our illustration by including the interaction term between <code>sex</code> and <code>time</code>, and we focus on the difference between males and females for the various time points. We start by fitting the model:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">gm &lt;-<span class="st"> </span><span class="kw">mixed_model</span>(<span class="dt">fixed =</span> y <span class="op">~</span><span class="st"> </span>sex <span class="op">*</span><span class="st"> </span>time, <span class="dt">random =</span> <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">|</span><span class="st"> </span>id, <span class="dt">data =</span> DF,
-                  <span class="dt">family =</span> <span class="kw">binomial</span>())</code></pre></div>
-<p>To compute the estimated log odds for males and females at the different time points we use the <code>emmeans()</code> functions from the <strong>emmeans</strong> package:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&quot;emmeans&quot;</span>)
-<span class="co">#&gt; Warning: package 'emmeans' was built under R version 3.5.2</span>
-gm_mc &lt;-<span class="st"> </span><span class="kw">emmeans</span>(gm, <span class="op">~</span><span class="st"> </span>sex <span class="op">|</span><span class="st"> </span>time)
-
-gm_mc
-<span class="co">#&gt; time = Time1:</span>
-<span class="co">#&gt;  sex    emmean    SE  df asymp.LCL asymp.UCL</span>
-<span class="co">#&gt;  male    -2.74 0.342 Inf     -3.41    -2.067</span>
-<span class="co">#&gt;  female  -1.21 0.255 Inf     -1.71    -0.707</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; time = Time2:</span>
-<span class="co">#&gt;  sex    emmean    SE  df asymp.LCL asymp.UCL</span>
-<span class="co">#&gt;  male    -1.68 0.276 Inf     -2.22    -1.136</span>
-<span class="co">#&gt;  female  -1.44 0.263 Inf     -1.95    -0.920</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; time = Time3:</span>
-<span class="co">#&gt;  sex    emmean    SE  df asymp.LCL asymp.UCL</span>
-<span class="co">#&gt;  male    -4.40 0.546 Inf     -5.47    -3.332</span>
-<span class="co">#&gt;  female  -1.39 0.261 Inf     -1.90    -0.876</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; time = Time4:</span>
-<span class="co">#&gt;  sex    emmean    SE  df asymp.LCL asymp.UCL</span>
-<span class="co">#&gt;  male    -1.34 0.261 Inf     -1.85    -0.826</span>
-<span class="co">#&gt;  female  -1.25 0.256 Inf     -1.75    -0.749</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Confidence level used: 0.95</span></code></pre></div>
-<p>The corresponding pairwise comparisons are performed by the <code>pairs()</code> function:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">pairs</span>(gm_mc)
-<span class="co">#&gt; time = Time1:</span>
-<span class="co">#&gt;  contrast      estimate    SE  df z.ratio p.value</span>
-<span class="co">#&gt;  male - female  -1.5313 0.410 Inf -3.736  0.0002 </span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; time = Time2:</span>
-<span class="co">#&gt;  contrast      estimate    SE  df z.ratio p.value</span>
-<span class="co">#&gt;  male - female  -0.2405 0.366 Inf -0.656  0.5117 </span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; time = Time3:</span>
-<span class="co">#&gt;  contrast      estimate    SE  df z.ratio p.value</span>
-<span class="co">#&gt;  male - female  -3.0137 0.586 Inf -5.146  &lt;.0001 </span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt; time = Time4:</span>
-<span class="co">#&gt;  contrast      estimate    SE  df z.ratio p.value</span>
-<span class="co">#&gt;  male - female  -0.0856 0.355 Inf -0.241  0.8095</span></code></pre></div>
-<p>For additional examples in testing interactions with the <strong>emmeans</strong> package check the vignette: <code>vignette(&quot;interactions&quot;, package = &quot;emmeans&quot;)</code>.</p>
+<p>We fit a mixed effects logistic regression for <code>y</code> assuming random intercepts for the random-effects part, and the main effects of <code>sex</code> and <code>time</code> for the fixed-effects part. In the call to <code>mixed_model()</code>, we are using the default values for the control arguments:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">mixed_model</span>(<span class="dt">fixed =</span> y <span class="op">~</span><span class="st"> </span>sex <span class="op">+</span><span class="st"> </span>time, <span class="dt">random =</span> <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">|</span><span class="st"> </span>id, <span class="dt">data =</span> DF, <span class="dt">family =</span> <span class="kw">binomial</span>())</code></pre></div>
+<p>In the following example we do not use any EM iterations, and we specify as optimizer the <code>nlimnb()</code> function. In addition, during each iteration of the outer loop in which the modes of the modes of the conditional distribution of the random effects are relocated, we icrease the number of the quasi-Newton iterations by 5:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">mixed_model</span>(<span class="dt">fixed =</span> y <span class="op">~</span><span class="st"> </span>sex <span class="op">+</span><span class="st"> </span>time, <span class="dt">random =</span> <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">|</span><span class="st"> </span>id, <span class="dt">data =</span> DF, <span class="dt">family =</span> <span class="kw">binomial</span>(), 
+            <span class="dt">iter_EM =</span> <span class="dv">0</span>, <span class="dt">optimizer =</span> <span class="st">&quot;nlminb&quot;</span>, <span class="dt">iter_qN_incr =</span> <span class="dv">5</span>)</code></pre></div>
+<p>In the following call, we allow again for EM iterations, but we set the number of the iterations to 1000 giving the option to achieve convergence only during the EM-phase. In addition, we set to update the modes of the conditional distribution of the random effects every 5 iterations, and we also set the number of quadrature points to 21:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">mixed_model</span>(<span class="dt">fixed =</span> y <span class="op">~</span><span class="st"> </span>sex <span class="op">+</span><span class="st"> </span>time, <span class="dt">random =</span> <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">|</span><span class="st"> </span>id, <span class="dt">data =</span> DF, <span class="dt">family =</span> <span class="kw">binomial</span>(), 
+            <span class="dt">iter_EM =</span> <span class="dv">1000</span>, <span class="dt">update_GH_every =</span> <span class="dv">5</span>, <span class="dt">nAGQ =</span> <span class="dv">21</span>)</code></pre></div>
+<p>To not run the optimization procedure at all, we need to also to set <code>iter_qN_outer</code> to 0, e.g.,</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">mixed_model</span>(<span class="dt">fixed =</span> y <span class="op">~</span><span class="st"> </span>sex <span class="op">+</span><span class="st"> </span>time, <span class="dt">random =</span> <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">|</span><span class="st"> </span>id, <span class="dt">data =</span> DF, <span class="dt">family =</span> <span class="kw">binomial</span>(), 
+            <span class="dt">iter_EM =</span> <span class="dv">0</span>, <span class="dt">iter_qN_outer =</span> <span class="dv">0</span>)</code></pre></div>
 </div>
 </div>
 

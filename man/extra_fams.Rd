@@ -1,4 +1,5 @@
 \name{Extra Family Objects}
+\alias{students.t}
 \alias{beta.fam}
 \alias{zi.poisson}
 \alias{zi.negative.binomial}
@@ -9,7 +10,7 @@
 
 
 \title{
-Family functions for Beta, Zero-Inflated and Hurdle Poisson and Negative Binomial,
+Family functions for Student's-t, Beta, Zero-Inflated and Hurdle Poisson and Negative Binomial,
 Hurdle Log-Normal, and Hurdle Beta Mixed Models}
 
 \description{
@@ -20,6 +21,7 @@ mixed-effects model, using
 }
 
 \usage{
+students.t(df = stop("'df' must be specified"), link = "identity")
 beta.fam()
 zi.poisson()
 zi.negative.binomial()
@@ -27,6 +29,11 @@ hurdle.poisson()
 hurdle.negative.binomial()
 hurdle.lognormal()
 hurdle.beta.fam()
+}
+
+\arguments{
+\item{link}{name of the link function.}
+\item{df}{the degrees of freedom of the Student's t distribution.}
 }
 
 \note{Currently only the log-link is implemented for the Poisson and negative binomial 

@@ -1,21 +1,23 @@
 export(mixed_model, marginal_coefs, coef, fixef, ranef, confint, anova, fitted, residuals, 
        effectPlotData, negative.binomial, predict, zi.poisson, zi.negative.binomial,
-       simulate, model.matrix, model.frame, terms, hurdle.poisson, hurdle.negative.binomial,
-       hurdle.lognormal, beta.fam, hurdle.beta.fam, scoring_rules)
+       simulate, model.matrix, model.frame, terms, formula, nobs, hurdle.poisson, 
+       hurdle.negative.binomial, hurdle.lognormal, beta.fam, hurdle.beta.fam, students.t,
+       scoring_rules)
 
 importFrom("stats", "AIC", "BIC", "asOneSidedFormula", "cov2cor",
              "dbinom", "dnorm", "dpois", "fitted", "glm.fit", "logLik",
              "make.link", "model.frame", "model.matrix", "model.offset",
-             "model.response", "na.exclude", "optim", "pchisq", "pnorm",
+             "model.response", "na.exclude", "pchisq", "pnorm",
              "terms", "var", "vcov", ".getXlevels", "delete.response", "qnorm", "rnorm",
            "confint", "residuals", "coef", "anova", "dt", "quantile", "rchisq", "runif", 
            "sd", "predict", "binomial", "plogis", "poisson", "simulate", "rbinom", 
            "rnbinom", "rpois", "ppois", "qpois", "qnbinom", "pnbinom", "dnbinom", "rbeta",
-           "rlnorm", "na.pass")
+           "rlnorm", "na.pass", "formula", "family", "optim", "nlminb", "nobs", "rt")
 importFrom("utils", "as.relistable", "relist")
 importFrom("MASS", "mvrnorm")
 importFrom("parallel", "makeCluster", "stopCluster", "detectCores", "parLapply")
 importFrom("nlme", "fixef", "ranef")
+
 
 S3method(print, MixMod)
 S3method(logLik, MixMod)
@@ -33,14 +35,16 @@ S3method(fitted, MixMod)
 S3method(residuals, MixMod)
 S3method(marginal_coefs, MixMod)
 S3method(print, m_coefs)
+S3method(coef, m_coefs)
 S3method(effectPlotData, MixMod)
 S3method(predict, MixMod)
 S3method(simulate, MixMod)
 S3method(model.matrix, MixMod)
 S3method(model.frame, MixMod)
 S3method(terms, MixMod)
-
-
+S3method(formula, MixMod)
+S3method(family, MixMod)
+S3method(nobs, MixMod)
 
 
 

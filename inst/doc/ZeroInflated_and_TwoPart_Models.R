@@ -149,7 +149,7 @@ hurdle.lognormal <- function () {
         out
     }
     simulate <- function (n, mu, phis, eta_zi) {
-        y <- rnorm(n = n, mean = mu, sd = exp(phis))
+        y <- rlnorm(n = n, meanlog = mu, sdlog = exp(phis))
         y[as.logical(rbinom(n, 1, plogis(eta_zi)))] <- 0
         y
     }
@@ -172,7 +172,7 @@ km2 <- update(km1, random = ~ 1 || id, zi_random = ~ 1 | id)
 
 km2
 
-## ------------------------------------------------------------------------
+## ---- fig.align = "center", fig.width = 8.5, fig.height = 7.5------------
 par(mar = c(2.5, 2.5, 0, 0), mgp = c(1.1, 0.5, 0), cex.axis = 0.7, cex.lab = 0.8)
 y <- DF$y
 y[y > 0] <- log(y[y > 0])
@@ -232,25 +232,115 @@ dm1 <- mixed_model(y ~ sex * time, random = ~ time | id, data = DF,
 
 dm1
 
-## ------------------------------------------------------------------------
-dm2 <- update(dm1, zi_random = ~ 1 | id)
+## ---- eval = FALSE-------------------------------------------------------
+#  dm2 <- update(dm1, zi_random = ~ 1 | id)
+#  
+#  dm2
+#  #>
+#  #> Call:
+#  #> mixed_model(fixed = y ~ sex * time, random = ~time | id, data = DF,
+#  #>     family = hurdle.poisson(), zi_fixed = ~sex, zi_random = ~1 |
+#  #>         id)
+#  #>
+#  #>
+#  #> Model:
+#  #>  family: hurdle poisson
+#  #>  link: log
+#  #>
+#  #> Random effects covariance matrix:
+#  #>                 StdDev    Corr
+#  #> (Intercept)     0.8227  (Intr)    time
+#  #> time            0.3636 -0.3135
+#  #> zi_(Intercept)  0.6601 -0.0089  0.0698
+#  #>
+#  #> Fixed effects:
+#  #>    (Intercept)      sexfemale           time sexfemale:time
+#  #>     1.52752248     0.08381132     0.09213789    -0.08032932
+#  #>
+#  #> Zero-part coefficients:
+#  #> (Intercept)   sexfemale
+#  #>  -1.5386156   0.5177395
+#  #>
+#  #> log-Lik: -2797.308
 
-dm2
+## ---- eval = FALSE-------------------------------------------------------
+#  anova(dm1, dm2)
+#  #>
+#  #>         AIC     BIC  log.Lik  LRT df p.value
+#  #> dm1 5622.60 5646.05 -2802.30
+#  #> dm2 5618.62 5618.62 -2797.31 9.98  3  0.0187
 
-## ------------------------------------------------------------------------
-anova(dm1, dm2)
+## ---- eval = FALSE-------------------------------------------------------
+#  hm1 <- mixed_model(y ~ sex * time, random = ~ time | id, data = DF,
+#                    family = hurdle.negative.binomial(), zi_fixed = ~ sex)
+#  
+#  hm1
+#  #>
+#  #> Call:
+#  #> mixed_model(fixed = y ~ sex * time, random = ~time | id, data = DF,
+#  #>     family = hurdle.negative.binomial(), zi_fixed = ~sex)
+#  #>
+#  #>
+#  #> Model:
+#  #>  family: hurdle negative binomial
+#  #>  link: log
+#  #>
+#  #> Random effects covariance matrix:
+#  #>              StdDev    Corr
+#  #> (Intercept)  0.7305
+#  #> time         0.3249 -0.1170
+#  #>
+#  #> Fixed effects:
+#  #>    (Intercept)      sexfemale           time sexfemale:time
+#  #>     1.48250218     0.07508276     0.10249953    -0.08978082
+#  #>
+#  #> Zero-part coefficients:
+#  #> (Intercept)   sexfemale
+#  #>  -1.4178427   0.4857483
+#  #>
+#  #> phi parameters:
+#  #>  0.6778918
+#  #>
+#  #> log-Lik: -2181.468
 
-## ------------------------------------------------------------------------
-hm1 <- mixed_model(y ~ sex * time, random = ~ time | id, data = DF, 
-                  family = hurdle.negative.binomial(), zi_fixed = ~ sex)
+## ---- eval = FALSE-------------------------------------------------------
+#  hm2 <- update(hm1, zi_random = ~ 1 | id)
+#  
+#  hm2
+#  #>
+#  #> Call:
+#  #> mixed_model(fixed = y ~ sex * time, random = ~time | id, data = DF,
+#  #>     family = hurdle.negative.binomial(), zi_fixed = ~sex, zi_random = ~1 |
+#  #>         id)
+#  #>
+#  #>
+#  #> Model:
+#  #>  family: hurdle negative binomial
+#  #>  link: log
+#  #>
+#  #> Random effects covariance matrix:
+#  #>                 StdDev    Corr
+#  #> (Intercept)     0.7313  (Intr)    time
+#  #> time            0.3258 -0.1161
+#  #> zi_(Intercept)  0.6610 -0.0522  0.1420
+#  #>
+#  #> Fixed effects:
+#  #>    (Intercept)      sexfemale           time sexfemale:time
+#  #>     1.47626158     0.07041272     0.10539676    -0.08613159
+#  #>
+#  #> Zero-part coefficients:
+#  #> (Intercept)   sexfemale
+#  #>  -1.5425483   0.5193066
+#  #>
+#  #> phi parameters:
+#  #>  0.6759281
+#  #>
+#  #> log-Lik: -2176.313
 
-hm1
-
-## ------------------------------------------------------------------------
-hm2 <- update(hm1, zi_random = ~ 1 | id)
-
-hm2
-
-## ------------------------------------------------------------------------
-anova(hm1, hm2)
+## ---- eval = FALSE-------------------------------------------------------
+#  anova(hm1, hm2)
+#  #>
+#  #>         AIC     BIC  log.Lik   LRT df p.value
+#  #> hm1 4382.94 4408.99 -2181.47
+#  #> hm2 4378.63 4378.63 -2176.31 10.31  3  0.0161
 

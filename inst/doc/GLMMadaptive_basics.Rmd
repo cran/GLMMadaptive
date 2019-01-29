@@ -146,8 +146,23 @@ extract <- function (obj) {
 sapply(models, extract)
 ```
 
-We observe rather stable model with virtually no differences between the different choices
+We observe a rather stable model with virtually no differences between the different choices
 of quadrature points.
+
+We first compare the model with a simple logistic regression that does not include any
+random effects:
+```{r}
+km <- glm(y ~ sex * time, data = DF, family = binomial())
+
+anova(fm1, km)
+```
+
+We obtain a highly significant p-value suggesting that there are correlations in the data
+that cannot be ignored. *Note:* the `anova()` method that performs the likelihood ratio
+test calculates the p-value using the standard $\chi^2$ distribution, here with one 
+degree of freedom. However, because the null hypothesis for testing variance parameters is
+on the boundary of the corresponding parameter space, it would be more appropriate to use 
+a mixture of $\chi^2$ distributions.
 
 We extend model `fm1` by also including a random slopes term; however, we assume that the 
 covariance between the random intercepts and random slopes is zero. This is achieved by
@@ -167,14 +182,14 @@ anova(fm1, fm2)
 
 The results suggest that we need the random slopes term. We continue by testing whether 
 the covariance between the random effects terms is zero. The model under the alternative
-hypothesis is:
-```{r}
+hypothesis is (results not shown):
+```{r, eval = FALSE}
 fm3 <- mixed_model(fixed = y ~ sex * time, random = ~ time | id, data = DF,
                    family = binomial())
 ```
 
-And again the likelihood ratio test is performed by a call to `anova()`:
-```{r}
+And again the likelihood ratio test is performed by a call to `anova()` (results not shown):
+```{r, eval = FALSE}
 anova(fm2, fm3)
 ```
 
@@ -212,14 +227,49 @@ DF$y <- rpois(n * K, exp(eta_y))
 
 We fit the mixed effects Poisson regression for `y` assuming random intercepts for the 
 random-effects part.
-```{r}
+```{r, eval = FALSE}
 gm1 <- mixed_model(fixed = y ~ sex * time, random = ~ 1 | id, data = DF,
                    family = poisson())
 ```
 
 As previously, the summary method gives a detailed output of the model:
-```{r}
+```{r, eval = FALSE}
 summary(gm1)
+#> 
+#> Call:
+#> mixed_model(fixed = y ~ sex * time, random = ~1 | id, data = DF, 
+#>     family = poisson())
+#> 
+#> Data Descriptives:
+#> Number of Observations: 800
+#> Number of Groups: 100 
+#> 
+#> Model:
+#>  family: poisson
+#>  link: log 
+#> 
+#> Fit statistics:
+#>    log.Lik      AIC      BIC
+#>  -2782.331 5574.663 5587.689
+#> 
+#> Random effects covariance matrix:
+#>                StdDev
+#> (Intercept) 0.9785518
+#> 
+#> Fixed effects:
+#>                Estimate Std.Err  z-value   p-value
+#> (Intercept)      2.9461  0.3091   9.5316   < 1e-04
+#> sexfemale       -0.8651  0.2711  -3.1913 0.0014162
+#> time             0.2404  0.0016 151.3470   < 1e-04
+#> sexfemale:time  -0.0511  0.0028 -18.3994   < 1e-04
+#> 
+#> Integration:
+#> method: adaptive Gauss-Hermite quadrature rule
+#> quadrature points: 11
+#> 
+#> Optimization:
+#> method: hybrid EM and quasi-Newton
+#> converged: TRUE
 ```
 
 In settings with few subjects, repeated measurements of separation effects, the package 
@@ -228,13 +278,18 @@ penalty/prior is in the form of a Student's t distribution with mean 0, scale pa
 and 3 degrees of freedom, and it is placed in all $\beta$ coefficients except from the 
 intercept. The penalized model can be fitted by setting argument `penalized` to `TRUE`, 
 i.e.,
-```{r}
+```{r, eval = FALSE}
 gm2 <- mixed_model(fixed = y ~ sex * time, random = ~ 1 | id, data = DF,
                    family = poisson(), penalized = TRUE)
 ```
 
-```{r}
+```{r, eval = FALSE}
 cbind('unpenalized' = fixef(gm1), 'penalized' = fixef(gm2))
+#>                unpenalized   penalized
+#> (Intercept)     2.94614349  2.94238986
+#> sexfemale      -0.86510298 -0.82073289
+#> time            0.24039622  0.24043929
+#> sexfemale:time -0.05106264 -0.05118503
 ```
 
 In this example we observe small differences between the penalized and unpenalized models. 

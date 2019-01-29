@@ -1,3 +1,21 @@
+# GLMMadaptive 0.5.0
+
+## General
+* Added support for the **DHARMa** package.
+
+* The new vignette *Goodness of Fit for MixMod Objects* describes how to check the fit 
+of mixed models fitted by **GLMMadaptive**.
+
+* Added support for the **effects** package.
+
+* There is a new section in the vignette *Methods for MixMod Objects* illustrating the use of the **effects** package.
+
+* Function `marginal_coefs()` has a faster implementation. Compared to the previous implementation the results will be slightly different.
+
+* The optimizer `nlminb()` can now also be invoked using the new control argument `optimizer`; default is `"optim"` corresponding to function `optim()`.
+
+* The new vignette *Optimization and Numerical Integration in GLMMadaptive* describes how to control the optimization and numerical integration procedures in the package.
+
 # GLMMadaptive 0.4.0
 
 ## General
