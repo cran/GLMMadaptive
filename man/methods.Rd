@@ -28,7 +28,8 @@
 \alias{model.frame.MixMod}
 \alias{nobs}
 \alias{nobs.MixMod}
-
+\alias{VIF}
+\alias{VIF.MixMod}
 
 \title{
 Various Methods for Standard Generics
@@ -87,7 +88,7 @@ predict(object, \dots)
 simulate(object, nsim = 1, seed = NULL, \dots)
 
 \method{simulate}{MixMod}(object, nsim = 1, seed = NULL, 
-    type = c("subject_specific", "mean_subject"),
+    type = c("subject_specific", "mean_subject"), new_RE = FALSE,
     acount_MLEs_var = FALSE, sim_fun = NULL, 
     sandwich = FALSE, \dots)
     
@@ -111,6 +112,10 @@ model.matrix(object, \dots)
 nobs(object, \dots)
 
 \method{nobs}{MixMod}(object, level = 1, \dots)
+
+VIF(object, \dots)
+
+\method{VIF}{MixMod}(object, type = c("fixed", "zi_fixed"), \dots)
 
 }
 
@@ -139,8 +144,8 @@ nobs(object, \dots)
   effects. When \code{L} is used, a Wald test is performed.}
 \item{sandwich}{logical; if \code{TRUE} the sandwich estimator is used in the calculation
   of standard errors.}
-\item{type}{character string indicating the type of fitted values / residuals / predictions
-    to calculate. Option \code{"mean_subject"} corresponds to only using the fixed-effects
+\item{type}{character string indicating the type of fitted values / residuals / predictions 
+    / variance inflation factors to calculate. Option \code{"mean_subject"} corresponds to only using the fixed-effects
     part; option \code{"subject_specific"} corresponds to using both the fixed- and 
     random-effects parts; option \code{"marginal"} is based in multiplying the fixed 
     effects design matrix with the marginal coefficients obtained by 
@@ -169,6 +174,9 @@ nobs(object, \dots)
     \code{NULL}, with extra columns the predictions, and the lower and upper limits of
     the cofidence intervals when \code{type = "subject_specific"}.}
 \item{nsim}{numeric scalar giving the number of times to simulate the response variable.}
+\item{new_RE}{logical; if \code{TRUE}, new random effects will be simulated, and new outcome
+    data will be simulated by \code{simulate()} using these new random effect. Otherwise,
+    the empirical Bayes estimates of the random effects from the fitted model will be used.}
 \item{acount_MLEs_var}{logical; if \code{TRUE} it accounts for the variability of the 
     maximum likelihood estimates (MLEs) by simulating a new value for the parameters from 
     a multivariate normal distribution with mean the MLEs and covariance matrix the 

@@ -26,7 +26,6 @@ logLik_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi,
     log_p_yb <- rowsum(log_dens(y, eta_y, mu_fun, phis, eta_zi), id, reorder = FALSE)
     log_p_b <- matrix(dmvnorm(b, rep(0, nRE), D, TRUE),
                       nrow(log_p_yb), ncol(log_p_yb), byrow = TRUE)
-    # log penalty include here dmvt(betas, pen_mean, invSigma = pen_invsds, df = pen_df)
     p_yb <- exp(log_p_yb + log_p_b)
     if (any(zero_ind <- p_yb == 0.0)) {
         p_yb[zero_ind] <- 1e-300
@@ -34,7 +33,7 @@ logLik_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi,
     p_y <- c(p_yb %*% wGH) * dets
     out <- - sum(log(p_y), na.rm = TRUE)
     if (penalized)
-        out <- out - dmvt(betas[-1L], mu = pen_mu, invSigma = pen_invSigma, df = pen_df)
+        out <- out - dmvt(betas, mu = pen_mu, invSigma = pen_invSigma, df = pen_df)
     out
 }
 
@@ -147,9 +146,9 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
         }
     }
     if (penalized) {
-        pen_invSigma_betas <- betas[-1L] * diag(pen_invSigma) / pen_df
-        fact <- (pen_df + ncx) / c(1 + crossprod(betas[-1L], pen_invSigma_betas))
-        score.betas <- score.betas + c(0, pen_invSigma_betas * fact)
+        pen_invSigma_betas <- betas * diag(pen_invSigma) / pen_df
+        fact <- (pen_df + ncx) / c(1 + crossprod(betas, pen_invSigma_betas))
+        score.betas <- score.betas + pen_invSigma_betas * fact
     }
     ###
     score.phis <- if (!is.null(phis)) {
@@ -305,9 +304,9 @@ score_betas <- function (betas, y, N, X, id, offset, phis, Ztb, eta_zi, p_by, wG
         }
     }
     if (penalized) {
-        pen_invSigma_betas <- betas[-1L] * diag(pen_invSigma) / pen_df
-        fact <- (pen_df + ncx) / c(1 + crossprod(betas[-1L], pen_invSigma_betas))
-        out <- out + c(0, pen_invSigma_betas * fact)
+        pen_invSigma_betas <- betas * diag(pen_invSigma) / pen_df
+        fact <- (pen_df + ncx) / c(1 + crossprod(betas, pen_invSigma_betas))
+        out <- out + pen_invSigma_betas * fact
     }
     out
 }
@@ -430,6 +429,7 @@ negative.binomial <- function () {
     }
     structure(list(family = "negative binomial", link = stats$name, 
                    linkfun = stats$linkfun, linkinv = stats$linkinv, log_dens = log_dens,
+                   variance = function (mu, theta) mu + mu^2 / theta,
                    score_eta_fun = score_eta_fun, score_phis_fun = score_phis_fun),
               class = "family")
 }
@@ -606,6 +606,7 @@ hurdle.poisson <- function () {
     }
     structure(list(family = "hurdle poisson", link = stats$name, 
                    linkfun = stats$linkfun, linkinv = stats$linkinv, log_dens = log_dens,
+                   variance = function (mu) (mu + mu^2)/(1 - exp(-mu)) - mu^2/((1 - exp(-mu))^2),
                    score_eta_fun = score_eta_fun, score_eta_zi_fun = score_eta_zi_fun,
                    simulate = simulate),
               class = "family")
@@ -784,7 +785,8 @@ beta.fam <- function () {
         rbeta(n, shape1 = mu * phi, shape2 = phi * (1 - mu))
     }
     structure(list(family = "beta", link = stats$name, linkfun = stats$linkfun,
-                   linkinv = stats$linkinv, log_dens = log_dens, 
+                   linkinv = stats$linkinv, variance = function (mu) mu * (1 - mu), 
+                   log_dens = log_dens, 
                    score_eta_fun = score_eta_fun, score_phis_fun = score_phis_fun),
               class = "family")
 }
@@ -894,6 +896,7 @@ students.t <- function (df = stop("'df' must be specified"), link = "identity") 
     environment(score_phis_fun) <- environment(simulate) <- env
     structure(list(family = "Student's-t", link = stats$name, linkfun = stats$linkfun,
                    linkinv = stats$linkinv, log_dens = log_dens, 
+                   variance = function (mu) rep.int(1, length(mu)),
                    score_eta_fun = score_eta_fun, score_phis_fun = score_phis_fun,
                    simulate = simulate),
               class = "family")
@@ -966,3 +969,43 @@ compoisson <- function (max = 100) {
                    score_eta_fun = score_eta_fun, score_phis_fun = score_phis_fun),
               class = "family")
 }
+
+unit.lindley <- function () {
+    stats <- make.link("logit")
+    log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
+        # the log density function
+        # you link logit(mu) to covariates
+        # where mu = (1 / (1 + theta))
+        mu <- as.matrix(mu_fun(eta))
+        theta <- 1 / mu - 1
+        comp1 <- 2 * log(theta) - log(1 + theta)
+        comp2 <- - 3 * log(1 - y) 
+        comp3 <- - (theta * y) / (1 - y)
+        out <- comp1 + comp2 + comp3
+        attr(out, "mu_y") <- mu
+        out
+    }
+    score_eta_fun <- function (y, mu, phis, eta_zi) {
+        mu <- as.matrix(mu)
+        theta <- 1 / mu - 1
+        # the derivative of the log density w.r.t. theta
+        comp1 <- 2 / theta - 1 / (1 + theta)
+        comp3 <- - y / (1 - y)
+        # the derivative of theta w.r.t mu
+        tht_mu <- - 1 / mu^2
+        # the derivative of mu w.r.t. eta
+        mu_eta <- mu - mu * mu
+        (comp1 + comp3) * tht_mu * mu_eta
+    }
+    simulate <- function (n, mu, phis, eta_zi) {
+        NA
+    }
+    structure(list(family = "unit Lindley", link = stats$name, 
+                   linkfun = stats$linkfun, linkinv = stats$linkinv, 
+                   log_dens = log_dens, score_eta_fun = score_eta_fun,
+                   simulate = simulate,
+                   variance = function (mu) mu * (1 - mu)),
+              class = "family")
+}
+
+

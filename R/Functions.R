@@ -393,8 +393,13 @@ getRE_Formula <- function (form) {
 }
 
 getID_Formula <- function (form) {
-    form <- form[[length(form)]]
-    asOneSidedFormula(form[[3]])
+    if (is.list(form)) {
+        nams <- names(form)
+        as.formula(paste0("~", nams[1L], "/", nams[2L]))
+    } else {
+        form <- form[[length(form)]]
+        asOneSidedFormula(form[[3]])
+    }
 }
 
 printCall <- function (call) {
@@ -445,12 +450,14 @@ dmvt <- function (x, mu, Sigma = NULL, invSigma = NULL, df, log = TRUE, prop = T
     ss <- x - rep(mu, each = nrow(x))
     quad <- rowSums((ss %*% invSigma) * ss)/df
     if (!prop)
-        fact <- lgamma((df + p)/2) - lgamma(df/2) - 0.5 * (p * (log(pi) + 
-                                                                    log(df)) + logdetSigma)
+        fact <- lgamma((df + p)/2) - lgamma(df/2) - 
+        0.5 * (p * (log(pi) + log(df)) + logdetSigma)
     if (log) {
-        if (!prop) as.vector(fact - 0.5 * (df + p) * log(1 + quad)) else as.vector(- 0.5 * (df + p) * log(1 + quad))
+        if (!prop) as.vector(fact - 0.5 * (df + p) * log(1 + quad)) else 
+            as.vector(- 0.5 * (df + p) * log(1 + quad))
     } else {
-        if (!prop) as.vector(exp(fact) * ((1 + quad)^(-(df + p)/2))) else as.vector(((1 + quad)^(-(df + p)/2)))
+        if (!prop) as.vector(exp(fact) * ((1 + quad)^(-(df + p)/2))) else 
+            as.vector(((1 + quad)^(-(df + p)/2)))
     }
 }
 
@@ -491,3 +498,101 @@ register_s3_method <- function (pkg, generic, class) {
     }
 }
 
+constructor_form_random <- function (formula, data) {
+    groups <- all.vars(getID_Formula(formula))
+    ngroups <- length(groups)
+    formula <- if (!is.list(formula)) {
+        form_random <- vector("list", ngroups)
+        names(form_random) <- groups
+        form_random[] <- lapply(form_random, function (x) getRE_Formula(formula))
+    } else formula
+    if (ngroups > 1) {
+        nesting <- function (form, group_name) {
+            terms_form <- attr(terms(form), "term.labels")
+            if (length(terms_form)) {
+                interaction_terms <- paste0(group_name, ":", terms_form, collapse = " + ")
+                as.formula(paste0("~ 0 + ", group_name, " + ", interaction_terms))
+            } else {
+                as.formula(paste0("~ 0 + ", group_name))
+            }
+        }
+        formula[-1] <- mapply(nesting, formula[-1], groups[-1], SIMPLIFY = FALSE)
+    }
+    formula
+}
+
+constructor_Z <- function (termsZ_i, mfZ_i, id) {
+    n <- length(unique(id))
+    Zmats <- vector("list", n)
+    for (i in seq_len(n)) {
+        #mf <- model.frame(termsZ_i, mfZ_i[id == i, , drop = FALSE],
+        #                  drop.unused.levels = TRUE)
+        mf <- mfZ_i[id == i, , drop = FALSE]
+        mm <- model.matrix(termsZ_i, mf)
+        assign <- attr(mm, "assign")
+        assgn <- sapply(unique(assign), function (x) which(assign == x))
+        if (is.list(assgn))
+            assgn <- unlist(assgn, use.names = FALSE)
+        Zmats[[i]] <- mm[, c(t(assgn)), drop = FALSE]
+    }
+    do.call("rbind", Zmats)
+}
+
+cr_setup <- function (y, direction = c("forward", "backward")) {
+    direction <- match.arg(direction)
+    yname <- as.character(substitute("y"))
+    if (!is.factor(y)) {
+        y <- factor(y)
+    }
+    ylevels <- levels(y)
+    ncoefs <- length(ylevels) - 1
+    if (ncoefs < 2) {
+        stop("it seems that variable ", yname, " has two levels; use a mixed effects ",
+             "logistic regression instead.\n")
+    }
+    y <- as.numeric(unclass(y) - 1)
+    if (direction == "forward") {
+        reps <- ifelse(is.na(y), 1, ifelse(y < ncoefs - 1, y + 1, ncoefs))
+        subs <- rep(seq_along(y), reps)
+        cuts <- vector("list", ncoefs + 2)
+        cuts[[1]] <- NA
+        for (j in seq(0, ncoefs)) {
+            cuts[[j + 2]] <- seq(0, if (j < ncoefs - 1) j else ncoefs - 1)
+        } 
+        cuts <- unlist(cuts[ifelse(is.na(y), 1, y + 2)], use.names = FALSE)
+        labels <- c("all", paste0(yname, ">=", ylevels[2:ncoefs]))
+        y <- rep(y, reps)
+        Y <- as.numeric(y == cuts)
+    } else {
+        reps <- ifelse(is.na(y), 1, ifelse(y > ncoefs - 3, ncoefs - (y - 1), ncoefs))
+        subs <- rep(seq_along(y), reps)
+        cuts <- vector("list", ncoefs + 2)
+        cuts[[ncoefs + 2]] <- NA
+        for (j in seq(ncoefs, 0)) {
+            cuts[[j + 1]] <- seq(0, ncoefs - if (j > ncoefs - 3) j else 1)
+        } 
+        cuts <- unlist(cuts[ifelse(is.na(y), 1, y + 1)], use.names = FALSE)
+        labels <- c("all", paste0(yname, "<=", ylevels[ncoefs:2]))
+        y <- rep(y, reps)
+        Y <- as.numeric(y == (ncoefs - cuts))
+    }
+    cohort <- factor(cuts, levels = seq(0, ncoefs - 1), labels = labels)
+    list(y = Y, cohort = cohort, subs = subs, reps = reps)
+}
+
+cr_marg_probs <- function (eta, direction = c("forward", "backward")) {
+    direction <- match.arg(direction)
+    ncoefs <- ncol(eta)
+    if (direction == "forward") {
+        cumsum_1_minus_p <- t(apply(plogis(eta[, -ncoefs], log.p = TRUE, 
+                                           lower.tail = FALSE), 1, cumsum))
+        probs <- exp(plogis(eta, log.p = TRUE) + cbind(0, cumsum_1_minus_p))
+        cbind(probs, 1 - rowSums(probs))
+    } else {
+        cumsum_1_minus_p <- t(apply(plogis(eta[, seq(ncoefs, 2)], log.p = TRUE, 
+                                           lower.tail = FALSE), 1, cumsum))
+        probs <- exp(plogis(eta, log.p = TRUE) + 
+                         cbind(cumsum_1_minus_p[, seq(ncoefs - 1, 1)], 0))
+        cbind(1 - rowSums(probs), probs)
+    }
+}

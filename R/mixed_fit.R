@@ -57,9 +57,9 @@ mixed_fit <- function (y, X, Z, X_zi, Z_zi, id, offset, offset_zi, family,
         length(phis) + length(gammas)
     post_modes <- matrix(0.0, n, nRE)
     # penalized components
-    pen_mu <- if (penalized$penalized) rep(penalized$pen_mu, length.out = ncx - 1)
+    pen_mu <- if (penalized$penalized) rep(penalized$pen_mu, length.out = ncx)
     pen_invSigma <- if (penalized$penalized) 
-        diag(rep(1 / penalized$pen_sigma^2, length.out = ncx - 1), ncx - 1)
+        diag(rep(1 / penalized$pen_sigma^2, length.out = ncx), ncx)
     pen_df <- if (penalized$penalized) penalized$pen_df
     penalized <- penalized$penalized
     # set up EM algorithm
@@ -68,7 +68,8 @@ mixed_fit <- function (y, X, Z, X_zi, Z_zi, id, offset, offset_zi, family,
     tol1 <- control$tol1; tol2 <- control$tol2; tol3 <- control$tol3
     converged <- FALSE
     err_mgs <- paste("A large coefficient value has been detected during the optimization.\n",
-                     "Please re-scale you covariates. Alternatively, this may due to a\n",
+                     "Please re-scale you covariates and/or try setting the control argument\n", 
+                     "'iter_EM = 0'. Alternatively, this may due to a\n",
                      "divergence of the optimization algorithm, indicating that an overly\n",
                      "complex model is fitted to the data. For example, this could be\n",
                      "caused when including random-effects terms (e.g., in the\n", 
@@ -139,7 +140,7 @@ mixed_fit <- function (y, X, Z, X_zi, Z_zi, id, offset, offset_zi, family,
             log_p_y <- log(p_y * dets)
             lgLik[it] <- sum(log_p_y[is.finite(log_p_y)], na.rm = TRUE)
             if (penalized) {
-                lgLik[it] <- lgLik[it] + dmvt(betas[-1L], mu = pen_mu, invSigma = pen_invSigma,
+                lgLik[it] <- lgLik[it] + dmvt(betas, mu = pen_mu, invSigma = pen_invSigma,
                                               df = pen_df)
             }
             # check convergence
@@ -262,7 +263,8 @@ mixed_fit <- function (y, X, Z, X_zi, Z_zi, id, offset, offset_zi, family,
                           score_phis_fun = score_phis_fun, list_thetas = list_thetas, 
                           diag_D = diag_D, penalized = penalized, pen_mu = pen_mu, 
                           pen_invSigma = pen_invSigma, pen_df = pen_df)
-            new_pars <- relist(opt$par, skeleton = list_thetas)
+            tht <- opt$par
+            new_pars <- relist(tht, skeleton = list_thetas)
             betas <- new_pars$betas
             phis <- new_pars$phis
             gammas <- new_pars$gammas
