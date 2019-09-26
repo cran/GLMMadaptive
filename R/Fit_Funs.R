@@ -1,7 +1,8 @@
 logLik_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, GH, 
-                          canonical, user_defined, Xty, log_dens, mu_fun, var_fun, 
+                          canonical, user_defined, Xty, Xty_weights, log_dens, mu_fun, var_fun, 
                           mu.eta_fun, score_eta_fun, score_eta_zi_fun, score_phis_fun, 
-                          list_thetas, diag_D, penalized, pen_mu, pen_invSigma, pen_df) {
+                          list_thetas, diag_D, penalized, pen_mu, pen_invSigma, pen_df,
+                          weights) {
     thetas <- relist(thetas, skeleton = list_thetas)
     betas <- thetas$betas
     phis <- thetas$phis
@@ -13,7 +14,9 @@ logLik_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi,
     Ztb <- GH$Ztb
     Z_zitb <- GH$Z_zitb
     wGH <- GH$wGH
-    dets <- GH$dets
+    log_wGH <- rep(log(wGH), each = length(unique(id)))
+    #dets <- GH$dets
+    log_dets <- GH$log_dets
     ##
     eta_y <- as.vector(X %*% betas) + Ztb
     if (!is.null(offset))
@@ -23,25 +26,27 @@ logLik_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi,
         eta_zi <- eta_zi + Z_zitb
     if (!is.null(offset_zi))
         eta_zi <- eta_zi + offset_zi
-    log_p_yb <- rowsum(log_dens(y, eta_y, mu_fun, phis, eta_zi), id, reorder = FALSE)
+    log_Lik <- log_dens(y, eta_y, mu_fun, phis, eta_zi)
+    log_p_yb <- unname(rowsum(log_Lik, id, reorder = FALSE))
     log_p_b <- matrix(dmvnorm(b, rep(0, nRE), D, TRUE),
                       nrow(log_p_yb), ncol(log_p_yb), byrow = TRUE)
-    p_yb <- exp(log_p_yb + log_p_b)
-    if (any(zero_ind <- p_yb == 0.0)) {
-        p_yb[zero_ind] <- 1e-300
-    }
-    p_y <- c(p_yb %*% wGH) * dets
-    out <- - sum(log(p_y), na.rm = TRUE)
+    #p_yb <- exp(log_p_yb + log_p_b)
+    #if (any(zero_ind <- p_yb == 0.0)) {
+    #    p_yb[zero_ind] <- 1e-300
+    #}
+    #p_y <- c(p_yb %*% wGH) * dets
+    log_p_y <- rowLogSumExps(log_p_yb + log_p_b + log_wGH) + log_dets
+    out <- - sum(if (is.null(weights)) log_p_y else weights * log_p_y, na.rm = TRUE)
     if (penalized)
         out <- out - dmvt(betas, mu = pen_mu, invSigma = pen_invSigma, df = pen_df)
     out
 }
 
 score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, GH, 
-                         canonical, user_defined, Xty, log_dens, mu_fun, var_fun, 
+                         canonical, user_defined, Xty, Xty_weights, log_dens, mu_fun, var_fun, 
                          mu.eta_fun, score_eta_fun, score_eta_zi_fun, score_phis_fun, 
                          list_thetas, diag_D, penalized, pen_mu, pen_invSigma, pen_df,
-                         i_contributions = FALSE) {
+                         i_contributions = FALSE, weights) {
     thetas <- relist(thetas, skeleton = list_thetas)
     betas <- thetas$betas
     phis <- thetas$phis
@@ -54,6 +59,7 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
     Ztb <- GH$Ztb
     Z_zitb <- GH$Z_zitb
     wGH <- GH$wGH
+    log_wGH <- rep(log(wGH), each = length(unique(id)))
     ##
     eta_y <- as.vector(X %*% betas) + Ztb
     if (!is.null(offset))
@@ -64,21 +70,28 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
     if (!is.null(offset_zi))
         eta_zi <- eta_zi + offset_zi
     log_Lik <- log_dens(y, eta_y, mu_fun, phis, eta_zi)
-    log_p_yb <- rowsum(log_Lik, id, reorder = FALSE)
+    log_p_yb <- unname(rowsum(log_Lik, id, reorder = FALSE))
     log_p_b <- matrix(dmvnorm(b, rep(0, nRE), D, TRUE),
                       nrow(log_p_yb), ncol(log_p_yb), byrow = TRUE)
     # log penalty include here dmvt(betas, pen_mean, invSigma = pen_invsds, df = pen_df)
-    p_yb <- exp(log_p_yb + log_p_b)
-    if (any(zero_ind <- p_yb == 0.0)) {
-        p_yb[zero_ind] <- 1e-300
-    }
-    p_y <- c(p_yb %*% wGH)
-    p_by <- p_yb / p_y
+    #p_yb <- exp(log_p_yb + log_p_b)
+    #if (any(zero_ind <- p_yb == 0.0)) {
+    #    p_yb[zero_ind] <- 1e-300
+    #}
+    #p_y <- c(p_yb %*% wGH)
+    #p_by <- p_yb / p_y
+    log_p_yb_b <- log_p_yb + log_p_b
+    log_p_y <- rowLogSumExps(log_p_yb_b + log_wGH)
+    p_by <- exp(log_p_yb_b - log_p_y)
     t_p_by <- t(p_by)
-    n <- length(p_y)
+    n <- length(log_p_y)
     NN <- if (NCOL(y) == 2) nrow(y) else length(y)
     post_b <- apply(b, 2, function (b_k) colSums(t_p_by * matrix(b_k, ncol(Ztb), n) * wGH))
     post_b2 <- apply(b2, 2, function (b_k) colSums(t_p_by * matrix(b_k, ncol(Ztb), n) * wGH))
+    if (!is.null(weights)) {
+        post_b <- weights * post_b
+        post_b2 <- weights * post_b2
+    }
     post_vb <- post_b2 - if (nRE > 1) t(apply(post_b, 1, function (x) x %o% x)) else
         as.matrix(apply(post_b, 1, function (x) x %o% x))
     ###
@@ -89,7 +102,11 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
         if (!is.null(score_eta_fun)) {
             z <- score_eta_fun(y, mu_y, phis, eta_zi)
             for (l in seq_len(ncx)) {
-                cc <- drop(rowsum(X[, l] * z, id, reorder = FALSE))
+                cc <- if (is.null(weights)) {
+                    drop(rowsum(X[, l] * z, id, reorder = FALSE))
+                } else {
+                    weights * drop(rowsum(X[, l] * z, id, reorder = FALSE))
+                } 
                 if (i_contributions) {
                     sc[, l] <- c((X[, l] * z * p_by[id, , drop = FALSE]) %*% wGH)
                 } else {
@@ -102,7 +119,11 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
             l2 <- log_dens(y, eta_y - 1e-04, mu_fun, phis, eta_zi)
             z <- (l1 - l2) / (2 * 1e-04)
             for (l in seq_len(ncx)) {
-                cc <- drop(rowsum(X[, l] * z, id, reorder = FALSE))
+                cc <- if (is.null(weights)) {
+                    drop(rowsum(X[, l] * z, id, reorder = FALSE))
+                } else {
+                    weights * drop(rowsum(X[, l] * z, id, reorder = FALSE))
+                }
                 if (i_contributions) {
                     sc[, l] <- c((X[, l] * z * p_by[id, , drop = FALSE]) %*% wGH)
                 } else {
@@ -118,7 +139,11 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
             if (!is.null(N))
                 mu_y <- mu_y * N
             for (l in seq_len(ncx)) {
-                cc <- drop(rowsum(X[, l] * mu_y, id, reorder = FALSE))
+                cc <- if (is.null(weights)) {
+                    drop(rowsum(X[, l] * mu_y, id, reorder = FALSE))
+                } else {
+                    weights * drop(rowsum(X[, l] * mu_y, id, reorder = FALSE))
+                }
                 if (i_contributions) {
                     sc[, l] <- c((X[, l] * mu_y * p_by[id, , drop = FALSE]) %*% wGH)
                 } else {
@@ -128,14 +153,18 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
             if (i_contributions) {
                 - (X * if (NCOL(y) == 2) y[, 1] else y) + sc
             } else {
-                - Xty + sc
+                if (is.null(weights)) - Xty + sc else - Xty_weights + sc
             }
         } else {
             var <- var_fun(mu_y)
             deriv <- mu.eta_fun(eta_y)
             z <- if (!is.null(N)) (y[, 1] - N * mu_y) * deriv / var else (y - mu_y) * deriv / var
             for (l in seq_len(ncx)) {
-                cc <- drop(rowsum(X[, l] * z, id, reorder = FALSE))
+                cc <- if (is.null(weights)) {
+                    drop(rowsum(X[, l] * z, id, reorder = FALSE))
+                } else {
+                    weights * drop(rowsum(X[, l] * z, id, reorder = FALSE))
+                }
                 if (i_contributions) {
                     sc[, l] <- c((X[, l] * z * p_by[id, , drop = FALSE]) %*% wGH)
                 } else {
@@ -165,8 +194,12 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
                 if (i_contributions) {
                     sc[, i] <- c((z * p_by[id, , drop = FALSE]) %*% wGH)
                 } else {
-                    sc[i] <- sum(c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH), 
-                                 na.rm = TRUE)
+                    cc <- if (is.null(weights)) {
+                        c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH)
+                    } else {
+                        weights * c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH)
+                    }
+                    sc[i] <- sum(cc, na.rm = TRUE)
                 }
             }
             - sc
@@ -175,7 +208,12 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
             if (i_contributions) {
                 -c((z * p_by[id, , drop = FALSE]) %*% wGH)
             } else {
-                -sum(c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH), na.rm = TRUE)
+                cc <- if (is.null(weights)) {
+                    c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH)
+                } else {
+                    weights * c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH)
+                }
+                -sum(cc, na.rm = TRUE)
             }
         }
     }
@@ -190,7 +228,11 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
         ncx_zi <- ncol(X_zi)
         sc <- if (i_contributions) matrix(0.0, NN, ncx_zi) else numeric(ncx_zi)
         for (l in seq_len(ncx_zi)) {
-            cc <- drop(rowsum(X_zi[, l] * drop(z), id, reorder = FALSE))
+            cc <- if (is.null(weights)) {
+                drop(rowsum(X_zi[, l] * drop(z), id, reorder = FALSE))
+            } else {
+                weights * drop(rowsum(X_zi[, l] * drop(z), id, reorder = FALSE))
+            }
             if (i_contributions) {
                 sc[, l] <- c((X_zi[, l] * drop(z) * p_by[id, , drop = FALSE]) %*% wGH)
             } else {
@@ -243,7 +285,11 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
                     sum((post_b %*% D.mat) * post_b, na.rm = TRUE)
             }
             J <- jacobian2(attr(D, "L"), nRE)
-            drop(0.5 * (n * D1 - out) %*% J)
+            if (is.null(weights)) {
+                drop(0.5 * (n * D1 - out) %*% J)
+            } else {
+                drop(0.5 * (sum(weights) * D1 - out) %*% J)
+            }
         }
     }
     ###
@@ -254,8 +300,8 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
         c(score.betas, score.D, score.phis, score.gammas)
 }
 
-score_betas <- function (betas, y, N, X, id, offset, phis, Ztb, eta_zi, p_by, wGH, canonical,
-                         user_defined, Xty, log_dens, mu_fun, var_fun, mu.eta_fun,
+score_betas <- function (betas, y, N, X, id, offset, weights, phis, Ztb, eta_zi, p_by, wGH, canonical,
+                         user_defined, Xty, Xty_weights, log_dens, mu_fun, var_fun, mu.eta_fun,
                          score_eta_fun, score_phis_fun, penalized, pen_mu, pen_invSigma, 
                          pen_df) {
     eta_y <- as.vector(X %*% betas) + Ztb
@@ -268,7 +314,11 @@ score_betas <- function (betas, y, N, X, id, offset, phis, Ztb, eta_zi, p_by, wG
         if (!is.null(score_eta_fun)) {
             z <- score_eta_fun(y, mu_y, phis, eta_zi)
             for (l in seq_len(ncx)) {
-                cc <- drop(rowsum(X[, l] * z, id, reorder = FALSE))
+                cc <- if (is.null(weights)) {
+                    drop(rowsum(X[, l] * z, id, reorder = FALSE))
+                } else {
+                    weights * drop(rowsum(X[, l] * z, id, reorder = FALSE))
+                }
                 sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
             }
             - sc
@@ -277,7 +327,11 @@ score_betas <- function (betas, y, N, X, id, offset, phis, Ztb, eta_zi, p_by, wG
             l2 <- log_dens(y, eta_y - 1e-05, mu_fun, phis, eta_zi)
             z <- (l1 - l2) / (2 * 1e-05)
             for (l in seq_len(ncx)) {
-                cc <- drop(rowsum(X[, l] * z, id, reorder = FALSE))
+                cc <- if (is.null(weights)) {
+                    drop(rowsum(X[, l] * z, id, reorder = FALSE))
+                } else {
+                    weights * drop(rowsum(X[, l] * z, id, reorder = FALSE))
+                }
                 sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
             }
             - sc
@@ -288,16 +342,24 @@ score_betas <- function (betas, y, N, X, id, offset, phis, Ztb, eta_zi, p_by, wG
                 mu_y <- N * mu_y
             sc <- numeric(ncx)
             for (l in seq_len(ncx)) {
-                cc <- rowsum(X[, l] * mu_y, id, reorder = FALSE)
+                cc <- if (is.null(weights)) {
+                    rowsum(X[, l] * mu_y, id, reorder = FALSE)
+                } else {
+                    weights * rowsum(X[, l] * mu_y, id, reorder = FALSE)
+                }
                 sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
             }
-            - Xty + sc
+            if (is.null(weights)) - Xty + sc else - Xty_weights + sc
         } else {
             var <- var_fun(mu_y)
             deriv <- mu.eta_fun(eta_y)
             z <- if (!is.null(N)) (y[, 1] - N * mu_y) * deriv / var else (y - mu_y) * deriv / var
             for (l in seq_len(ncx)) {
-                cc <- rowsum(X[, l] * z, id, reorder = FALSE)
+                cc <- if (is.null(weights)) {
+                    rowsum(X[, l] * z, id, reorder = FALSE)
+                } else {
+                    weights * rowsum(X[, l] * z, id, reorder = FALSE)
+                }
                 sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
             }
             - sc
@@ -311,7 +373,7 @@ score_betas <- function (betas, y, N, X, id, offset, phis, Ztb, eta_zi, p_by, wG
     out
 }
 
-score_phis <- function (phis, y, X, betas, Ztb, offset, eta_zi, id, p_by,
+score_phis <- function (phis, y, X, betas, Ztb, offset, weights, eta_zi, id, p_by,
                         log_dens, mu_fun, wGH, score_phis_fun) {
     eta_y <- as.vector(X %*% betas) + Ztb
     if (!is.null(offset))
@@ -326,7 +388,12 @@ score_phis <- function (phis, y, X, betas, Ztb, offset, eta_zi, id, p_by,
             l1 <- log_dens(y, eta_y, mu_fun, phis1, eta_zi)
             l2 <- log_dens(y, eta_y, mu_fun, phis2, eta_zi)
             z <- (l1 - l2) / (phis1[i] - phis2[i])
-            sc[i] <- sum(c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH), na.rm = TRUE)
+            cc <- if (is.null(weights)) {
+                c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH)
+            } else {
+                weights * c((rowsum(z, id, reorder = FALSE) * p_by) %*% wGH)
+            }
+            sc[i] <- sum(cc, na.rm = TRUE)
         }
         - sc
     } else {
@@ -336,7 +403,7 @@ score_phis <- function (phis, y, X, betas, Ztb, offset, eta_zi, id, p_by,
     }
 }
 
-score_gammas <- function (gammas, y, X, betas, Ztb, offset, X_zi, Z_zi, Z_zitb, offset_zi,
+score_gammas <- function (gammas, y, X, betas, Ztb, offset, weights, X_zi, Z_zi, Z_zitb, offset_zi,
                           log_dens, score_eta_zi_fun, phis, mu_fun, p_by, wGH, id) {
     eta_y <- as.vector(X %*% betas) + Ztb
     if (!is.null(offset))
@@ -357,7 +424,11 @@ score_gammas <- function (gammas, y, X, betas, Ztb, offset, X_zi, Z_zi, Z_zitb, 
     ncx_zi <- ncol(X_zi)
     sc <- numeric(ncx_zi)
     for (l in seq_len(ncx_zi)) {
-        cc <- drop(rowsum(X_zi[, l] * z, id, reorder = FALSE))
+        cc <- if (is.null(weights)) {
+            drop(rowsum(X_zi[, l] * z, id, reorder = FALSE))
+        } else {
+            weights * drop(rowsum(X_zi[, l] * z, id, reorder = FALSE))
+        }
         sc[l] <- sum(c((cc * p_by) %*% wGH), na.rm = TRUE)
     }
     - sc
@@ -365,10 +436,10 @@ score_gammas <- function (gammas, y, X, betas, Ztb, offset, X_zi, Z_zi, Z_zitb, 
 
 binomial_log_dens = function (y, eta, mu_fun, phis, eta_zi) {
     mu_y <- mu_fun(eta)
-    out <- if (NCOL(y) == 2) {
-        dbinom(y[, 1], y[, 1] + y[, 2], mu_y, TRUE)
+    out <- if (NCOL(y) == 2L) {
+        dbinom(y[, 1L], y[, 1L] + y[, 2L], mu_y, TRUE)
     } else {
-        dbinom(y, 1, mu_y, TRUE)
+        dbinom(y, 1L, mu_y, TRUE)
     }
     attr(out, "mu_y") <- mu_y
     out
@@ -387,7 +458,7 @@ negative.binomial_log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
     log_mu_phis <- log(mu + phis)
     comp1 <- lgamma(y + phis) - lgamma(phis) - lgamma(y + 1)
     comp2 <- phis * log(phis) - phis * log_mu_phis
-    comp3 <- y * log(mu) - y * log_mu_phis
+    comp3 <- y * (log(mu) - log_mu_phis)
     out <- comp1 + comp2 + comp3
     attr(out, "mu_y") <- mu
     out
@@ -403,7 +474,7 @@ negative.binomial <- function () {
         log_mu_phis <- log(mu + phis)
         comp1 <- lgamma(y + phis) - lgamma(phis) - lgamma(y + 1)
         comp2 <- phis * log(phis) - phis * log_mu_phis
-        comp3 <- y * log(mu) - y * log_mu_phis
+        comp3 <- y * (log(mu) - log_mu_phis)
         out <- comp1 + comp2 + comp3
         attr(out, "mu_y") <- mu
         out
@@ -411,20 +482,27 @@ negative.binomial <- function () {
     score_eta_fun <- function (y, mu, phis, eta_zi) {
         # the derivative of the log density w.r.t. mu
         phis <- exp(phis)
-        mu_phis <- mu + phis
-        comp2 <- - phis / mu_phis
-        comp3 <- y / mu - y / mu_phis
-        # the derivative of mu w.r.t. eta (this depends on the chosen link function)
-        mu.eta <- mu
-        (comp2 + comp3) * mu.eta
+        #mu_phis <- mu + phis
+        #comp2 <- - phis / mu_phis
+        #comp3 <- y / mu - y / mu_phis
+        ## the derivative of mu w.r.t. eta (this depends on the chosen link function)
+        #mu.eta <- mu
+        #(comp2 + comp3) * mu.eta
+        mu.mu_phis <- mu / (mu + phis)
+        - phis * mu.mu_phis + y * (1 - mu.mu_phis) 
     }
     score_phis_fun <- function (y, mu, phis, eta_zi) {
         # the derivative of the log density w.r.t. phis
         phis <- exp(phis)
         mu_phis <- mu + phis
-        comp1 <- digamma(y + phis) - digamma(phis)
-        comp2 <- log(phis) + 1 - log(mu_phis) - phis / mu_phis
-        comp3 <- - y / mu_phis
+        #comp1 <- digamma(y + phis) - digamma(phis)
+        #comp2 <- log(phis) + 1 - log(mu_phis) - phis / mu_phis
+        #comp3 <- - y / mu_phis
+        #(comp1 + comp2 + comp3) * phis
+        y_phis <- y + phis
+        comp1 <- log(phis) + 1 - digamma(phis)
+        comp2 <- digamma(y_phis)
+        comp3 <- - log(mu_phis) - y_phis / mu_phis
         (comp1 + comp2 + comp3) * phis
     }
     structure(list(family = "negative binomial", link = stats$name, 
@@ -445,7 +523,6 @@ zi.poisson <- function () {
         mu0 <- mu[ind_y0, ]
         lambda0 <- lambda[ind_y0, ]
         mu1 <- mu[ind_y1, ]
-        lambda1 <- lambda[ind_y1, ]
         out <- as.matrix(eta)
         out[ind_y0, ] <- log(lambda0 + exp(-mu0))
         out[ind_y1, ] <- y[ind_y1] * log(mu1) - mu1 - lgamma(y[ind_y1] + 1)
@@ -495,7 +572,7 @@ zi.negative.binomial <- function () {
         log_mu_phis <- log(mu + phis)
         comp1 <- lgamma(y + phis) - lgamma(phis) - lgamma(y + 1)
         comp2 <- phis * log(phis) - phis * log_mu_phis
-        comp3 <- y * log(mu) - y * log_mu_phis
+        comp3 <- y * (log(mu) - log_mu_phis)
         out <- as.matrix(comp1 + comp2 + comp3)
         # ZI part
         ind_y0 <- y == 0
@@ -511,17 +588,15 @@ zi.negative.binomial <- function () {
         # NB part
         phis <- exp(phis)
         mu <- as.matrix(mu)
-        mu_phis <- mu + phis
-        comp2 <- - phis / mu_phis
-        comp3 <- y / mu - y / mu_phis
-        mu.eta <- mu
-        out <- (comp2 + comp3) * mu.eta
+        mu.mu_phis <- mu / (mu + phis)
+        out <- - phis * mu.mu_phis + y * (1 - mu.mu_phis) 
         # ZI part
         ind_y0 <- y == 0
-        lambda <- as.matrix(exp(eta_zi))
-        t <- phis / (phis + mu[ind_y0, ])
-        den <- (lambda[ind_y0, ] + t^phis) * (phis + mu[ind_y0, ])^2
-        out[ind_y0, ] <- - phis^2 * t^(phis - 1) * mu[ind_y0, ] / den
+        lambda <- exp(as.matrix(eta_zi)[ind_y0, ])
+        mu0 <- mu[ind_y0, ]
+        t <- phis / (phis + mu0)
+        den <- (lambda + t^phis) * (mu0 + phis)^2
+        out[ind_y0, ] <- - phis^2 * t^(phis - 1) * mu0 / den
         out
     }
     score_eta_zi_fun <- function (y, mu, phis, eta_zi) {
@@ -535,8 +610,8 @@ zi.negative.binomial <- function () {
         out[ind_y1, ] <- - lambda[ind_y1, ] / (1 + lambda[ind_y1, ])
         # ZI part
         t <- phis / (phis + mu[ind_y0, ])
-        out[ind_y0, ] <- lambda[ind_y0, ] / (lambda[ind_y0, ] + t^phis) - 
-            lambda[ind_y0, ] / (1 + lambda[ind_y0, ])
+        lambda0 <- lambda[ind_y0, ]
+        out[ind_y0, ] <- lambda0 / (lambda0 + t^phis) - lambda0 / (1 + lambda0)
         out
     }
     score_phis_fun <- function (y, mu, phis, eta_zi) {
@@ -786,7 +861,7 @@ beta.fam <- function () {
     }
     structure(list(family = "beta", link = stats$name, linkfun = stats$linkfun,
                    linkinv = stats$linkinv, variance = function (mu) mu * (1 - mu), 
-                   log_dens = log_dens, 
+                   log_dens = log_dens, simulate = simulate,
                    score_eta_fun = score_eta_fun, score_phis_fun = score_phis_fun),
               class = "family")
 }
@@ -971,6 +1046,7 @@ compoisson <- function (max = 100) {
 }
 
 unit.lindley <- function () {
+    stop("currently the 'unit.lindley()' family is unavailable.")
     stats <- make.link("logit")
     log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
         # the log density function
@@ -1006,6 +1082,127 @@ unit.lindley <- function () {
                    simulate = simulate,
                    variance = function (mu) mu * (1 - mu)),
               class = "family")
+}
+
+compoisson2 <- function (max = 100) {
+    stats <- make.link("log")
+    .max <- max
+    env <- new.env(parent = .GlobalEnv)
+    assign(".max", max, envir = env)
+    log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
+        # the log density function
+        phis <- exp(phis)
+        mu <- mu_fun(eta)
+        Z <- function (lambda, nu, sumTo) {
+            out <- lambda
+            j <- seq(1, sumTo)
+            log_lambda <- log(lambda)
+            nu_log_factorial <- nu * cumsum(log(j))
+            for (i in seq_along(out)) {
+                out[i] <- 1 + sum(exp(j * log_lambda[i] - nu_log_factorial))
+            }
+            out
+        }
+        out <- y * log(mu) - phis * lgamma(y + 1) - log(Z(mu, phis, .max))
+        attr(out, "mu_y") <- mu
+        out
+    }
+    score_eta_fun <- function (y, mu, phis, eta_zi) {
+        phi <- exp(phis)
+        Y <- function (lambda, nu, sumTo) {
+            out <- lambda
+            j <- seq(1, sumTo)
+            log_lambda <- log(lambda)
+            log_j <- log(j)
+            nu_log_factorial <- nu * cumsum(log_j)
+            for (i in seq_along(out)) {
+                F1 <- j * log_lambda[i] - nu_log_factorial
+                num <- sum(exp(log_j + F1))
+                den <- 1 + sum(exp(F1))
+                out[i] <- num / den
+            }
+            out
+        }
+        y - Y(mu, phi, .max)
+    }
+    score_phis_fun <- function (y, mu, phis, eta_zi) {
+        phi <- exp(phis)
+        W <- function (lambda, nu, sumTo) {
+            out <- lambda
+            j <- seq(1, sumTo)
+            log_lambda <- log(lambda)
+            log_factorial <- cumsum(log(j))
+            log_log_factorial <- log(log_factorial)
+            nu_log_factorial <- nu * log_factorial
+            for (i in seq_along(out)) {
+                num <- sum(exp(j * log_lambda[i] + log_log_factorial - nu_log_factorial))
+                den <- 1 + sum(exp(j * log_lambda[i] - nu_log_factorial))
+                out[i] <- num / den
+            }
+            out
+        }
+        (- lgamma(y + 1) + W(mu, phi, .max)) * phi
+    }
+    simulate <- function (n, mu, phis, eta_zi) {
+        phi <- exp(phis)
+    }
+    structure(list(family = "Conway Maxwell Poisson", link = stats$name, 
+                   linkfun = stats$linkfun, linkinv = stats$linkinv, log_dens = log_dens,
+                   score_eta_fun = score_eta_fun, score_phis_fun = score_phis_fun),
+              class = "family")
+}
+
+find_lambda <- function (mu, nu, sumTo = 100) {
+    j <- seq(1, sumTo)
+    nu_log_factorial <- nu * cumsum(log(j))
+    f <- function (lambda, mu) {
+        fact <- exp(j * log(lambda) - nu_log_factorial)
+        sum(c(-mu, (j - mu) * fact))
+    }
+    out <- mu
+    init_lambda <- (mu + (nu - 1) / (2 * nu))^nu
+    for (i in seq_along(mu)) {
+        int <- c(max(1e-06, init_lambda[i] - 10), min(sumTo, init_lambda[i] + 10))
+        test <- try(uniroot(f, interval = int, mu = mu[i])$root, silent = TRUE)
+        if (inherits(test, "try-error")) {
+            test <- try(uniroot(f, interval = c(1e-06, sumTo), mu = mu[i])$root, 
+                        silent = TRUE)
+        }
+        if (inherits(test, "try-error")) {
+            stop("it was not possible to find lambda parameter of the ", 
+                 "Conway Maxwell Poisson distribution;\nre-fit the model using ",
+                 "\n\n\tmixed_model(..., family = compoisson(max = XXX))\n\n",
+                 "where 'XXX' is a big enough count.")
+        }
+        out[i] <- test
+    }
+    out
+}
+
+y = 4
+eta = 1.2
+mu_fun = exp
+phis = log(2)
+.max = 100
+
+log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
+    # the log density function
+    nu <- exp(phis)
+    mu <- mu_fun(eta)
+    lambda <- find_lambda(mu, nu, .max)
+    Z <- function (lambda, nu, sumTo) {
+        out <- lambda
+        j <- seq(1, sumTo)
+        log_lambda <- log(lambda)
+        nu_log_factorial <- nu * cumsum(log(j))
+        for (i in seq_along(out)) {
+            out[i] <- 1 + sum(exp(j * log_lambda[i] - nu_log_factorial))
+        }
+        out
+    }
+    out <- y * log(lambda) - phis * lgamma(y + 1) - log(Z(lambda, nu, .max))
+    attr(out, "mu_y") <- mu
+    out
 }
 
 

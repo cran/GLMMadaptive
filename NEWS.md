@@ -1,3 +1,13 @@
+# GLMMadaptive 0.6.5
+
+## General
+* Added a `weights` argument in `mixed_model()`. These are simple multipliers on the log-likelihood contributions of each group/cluster, i.e., we presume that there are multiple replicates of each group/cluster denoted by the weights.
+
+* The internal implementation of the `negative.binomial()` family is now considerably faster.
+
+* More stable and accurate calculations using the **matrixStats** package.
+
+
 # GLMMadaptive 0.6.0
 
 ## General

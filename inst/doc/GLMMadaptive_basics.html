@@ -7,12 +7,13 @@
 <meta charset="utf-8" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <meta name="author" content="Dimitris Rizopoulos" />
 
-<meta name="date" content="2019-06-25" />
+<meta name="date" content="2019-09-26" />
 
 <title>GLMMadaptive Basics</title>
 
@@ -96,7 +97,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
       var style = rule.style.cssText;
       // check if color or background-color is set
-      if (rule.style.color === '' || rule.style.backgroundColor === '') continue;
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
       // replace div.sourceCode by a pre.sourceCode rule
       sheets[i].deleteRule(j);
       sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
@@ -303,7 +304,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 
 <h1 class="title toc-ignore">GLMMadaptive Basics</h1>
 <h4 class="author">Dimitris Rizopoulos</h4>
-<h4 class="date">2019-06-25</h4>
+<h4 class="date">2019-09-26</h4>
 
 
 <div id="TOC">
@@ -525,11 +526,11 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" title="1">gm2 &lt;-<span class="st"> </span><span class="kw">mixed_model</span>(<span class="dt">fixed =</span> y <span class="op">~</span><span class="st"> </span>sex <span class="op">*</span><span class="st"> </span>time, <span class="dt">random =</span> <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">|</span><span class="st"> </span>id, <span class="dt">data =</span> DF,</a>
 <a class="sourceLine" id="cb14-2" title="2">                   <span class="dt">family =</span> <span class="kw">poisson</span>(), <span class="dt">penalized =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" title="1"><span class="kw">cbind</span>(<span class="st">&#39;unpenalized&#39;</span> =<span class="st"> </span><span class="kw">fixef</span>(gm1), <span class="st">&#39;penalized&#39;</span> =<span class="st"> </span><span class="kw">fixef</span>(gm2))</a>
-<a class="sourceLine" id="cb15-2" title="2"><span class="co">#&gt;                unpenalized   penalized</span></a>
-<a class="sourceLine" id="cb15-3" title="3"><span class="co">#&gt; (Intercept)     2.94471507  2.94339254</span></a>
-<a class="sourceLine" id="cb15-4" title="4"><span class="co">#&gt; sexfemale      -0.86111224 -0.85993767</span></a>
-<a class="sourceLine" id="cb15-5" title="5"><span class="co">#&gt; time            0.24039444  0.24045925</span></a>
-<a class="sourceLine" id="cb15-6" title="6"><span class="co">#&gt; sexfemale:time -0.05105926 -0.05115046</span></a></code></pre></div>
+<a class="sourceLine" id="cb15-2" title="2"><span class="co">#&gt;                unpenalized  penalized</span></a>
+<a class="sourceLine" id="cb15-3" title="3"><span class="co">#&gt; (Intercept)     2.94471508  2.9433924</span></a>
+<a class="sourceLine" id="cb15-4" title="4"><span class="co">#&gt; sexfemale      -0.86111225 -0.8599373</span></a>
+<a class="sourceLine" id="cb15-5" title="5"><span class="co">#&gt; time            0.24039444  0.2404593</span></a>
+<a class="sourceLine" id="cb15-6" title="6"><span class="co">#&gt; sexfemale:time -0.05105926 -0.0511505</span></a></code></pre></div>
 <p>In this example we observe small differences between the penalized and unpenalized models. The users have the option to alter the specification of the Student’s t penalty by directly specifying the mean, scale and degrees of freedom arguments of the distribution. For example, a ridge penalty could be placed by setting the degrees of freedom to a high value. The call in this case should be:</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1">gm3 &lt;-<span class="st"> </span><span class="kw">mixed_model</span>(<span class="dt">fixed =</span> y <span class="op">~</span><span class="st"> </span>sex <span class="op">*</span><span class="st"> </span>time, <span class="dt">random =</span> <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">|</span><span class="st"> </span>id, <span class="dt">data =</span> DF,</a>
 <a class="sourceLine" id="cb16-2" title="2">                   <span class="dt">family =</span> <span class="kw">poisson</span>(), </a>
@@ -537,6 +538,9 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 </div>
 </div>
 
+
+
+<!-- code folding -->
 
 
 <!-- dynamically load mathjax for compatibility with self-contained -->
