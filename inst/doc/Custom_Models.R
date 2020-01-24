@@ -1,18 +1,18 @@
-## ----setup, include = FALSE----------------------------------------------
+## ----setup, include = FALSE---------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
 library("GLMMadaptive")
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 set.seed(101)
 dd <- expand.grid(f1 = factor(1:3), f2 = LETTERS[1:2], g = 1:30, rep = 1:15,
                   KEEP.OUT.ATTRS = FALSE)
 mu <- 5*(-4 + with(dd, as.integer(f1) + 4 * as.numeric(f2)))
 dd$y <- rnbinom(nrow(dd), mu = mu, size = 0.5)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 my_negBinom <- function (link = "log") {
     stats <- make.link(link)
     log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
@@ -32,7 +32,7 @@ my_negBinom <- function (link = "log") {
               class = "family")
 }
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 system.time(
     fm1 <-  mixed_model(fixed = y ~ f1 * f2, random = ~ 1 | g, data = dd, 
                         family = my_negBinom(), n_phis = 1, 
@@ -41,7 +41,7 @@ system.time(
 
 fm1
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 my_negBinom2 <- function () {
     stats <- make.link(link = "log")
     log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
@@ -81,7 +81,7 @@ my_negBinom2 <- function () {
               class = "family")
 }
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 system.time(
     fm2 <-  mixed_model(fixed = y ~ f1 * f2, random = ~ 1 | g, data = dd, 
                         family = my_negBinom2(), n_phis = 1, 
@@ -90,7 +90,7 @@ system.time(
 
 fm2
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  set.seed(1234)
 #  n <- 100 # number of subjects
 #  K <- 8 # number of measurements per subject
@@ -118,7 +118,7 @@ fm2
 #  # we simulate Student's t longitudinal data
 #  DF$y <- eta_y + sigma * rt(n * K, df = 4)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  students.t <- function (df = stop("'df' must be specified"), link = "identity") {
 #      .df <- df
 #      env <- new.env(parent = .GlobalEnv)
@@ -149,12 +149,12 @@ fm2
 #                class = "family")
 #  }
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  fm <-  mixed_model(y ~ sex * time, random = ~ time | id, data = DF,
 #                     family = students.t(4), n_phis = 1,
 #                     initial_values = list("betas" = gaussian()))
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 set.seed(1234)
 n <- 100 # number of subjects
 K <- 8 # number of measurements per subject
@@ -184,7 +184,7 @@ DF$y <- rbeta(n * K, shape1 = mu * phi, shape2 = phi * (1 - mu))
 # we transform to (0, 1)
 DF$y <- (DF$y * (nrow(DF) - 1) + 0.5) / nrow(DF)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 beta.fam <- function () {
     stats <- make.link("logit")
     log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
@@ -225,13 +225,13 @@ beta.fam <- function () {
               class = "family")
 }
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 gm <- mixed_model(y ~ sex * time, random = ~ 1 | id, data = DF,
                   family = beta.fam(), n_phis = 1)
 
 gm
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 nDF <- with(DF, expand.grid(time = seq(min(time), max(time), length = 25),
                             sex = levels(sex)))
 
