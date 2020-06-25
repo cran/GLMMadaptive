@@ -662,11 +662,7 @@ print.m_coefs <- function (x, digits = max(4, getOption("digits") - 4), ...) {
 }
 
 coef.m_coefs <- function (object, ...) {
-    if (is.null(object$coef_table)) {
-        object$betas
-    } else {
-        object$coef_table
-    }
+    object$betas
 }
 
 vcov.m_coefs <- function (object, ...) {
@@ -723,7 +719,8 @@ effectPlotData.MixMod <- function (object, newdata, level = 0.95, marginal = FAL
                                           probs = (1 - level) / 2)
             logit_marg_probs_upp <- apply(sim_marg_probs, c(1, 2), quantile, 
                                           probs = (1 + level) / 2)
-            newdata <- newdata[cohort_var == levels(cohort_var)[1L], names(newdata) != CR_cohort_varname]
+            newdata <- newdata[cohort_var == levels(cohort_var)[1L], 
+                               names(newdata) != CR_cohort_varname, drop = FALSE]
             newdata <- do.call("rbind", rep(list(newdata), nlvs + 1)); row.names(newdata) <- NULL
             newdata[["ordinal_response"]] <- rep(seq_len(nlvs + 1), each = nrow(newdata) / (nlvs + 1))
             newdata$pred <- c(logit_marg_probs)

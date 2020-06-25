@@ -434,7 +434,7 @@ score_gammas <- function (gammas, y, X, betas, Ztb, offset, weights, X_zi, Z_zi,
     - sc
 }
 
-binomial_log_dens = function (y, eta, mu_fun, phis, eta_zi) {
+binomial_log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
     mu_y <- mu_fun(eta)
     out <- if (NCOL(y) == 2L) {
         dbinom(y[, 1L], y[, 1L] + y[, 2L], mu_y, TRUE)
@@ -445,9 +445,17 @@ binomial_log_dens = function (y, eta, mu_fun, phis, eta_zi) {
     out
 }
 
-poisson_log_dens = function (y, eta, mu_fun, phis, eta_zi) {
+poisson_log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
     mu_y <- mu_fun(eta)
     out <- y * log(mu_y) - mu_y - lgamma(y + 1)
+    attr(out, "mu_y") <- mu_y
+    out
+}
+
+gamma_log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
+    mu_y <- mu_fun(eta)
+    scale <- exp(phis)
+    out <- dgamma(y, shape = mu_y / scale, scale = scale, log = TRUE)
     attr(out, "mu_y") <- mu_y
     out
 }
@@ -1178,5 +1186,85 @@ find_lambda <- function (mu, nu, sumTo = 100) {
     }
     out
 }
+
+beta.binomial <- function (link = "logit") {
+    .link <- link
+    env <- new.env(parent = .GlobalEnv)
+    assign(".link", link, envir = env)
+    stats <- make.link(link)
+    dbbinom <- function (x, size, prob, phi, log = FALSE) {
+        A <- phi * prob
+        B <- phi * (1 - prob)
+        log_numerator <- lbeta(x + A, size - x + B)
+        log_denominator <- lbeta(A, B)
+        fact <- lchoose(size, x)
+        if (log) {
+            fact + log_numerator - log_denominator
+        } else {
+            exp(fact + log_numerator - log_denominator)
+        }
+    }
+    log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
+        phi <- exp(phis)
+        eta <- as.matrix(eta)
+        mu_y <- mu_fun(eta)
+        out <- if (NCOL(y) == 2L) {
+            dbbinom(y[, 1L], y[, 1L] + y[, 2L], mu_y, phi, TRUE)
+        } else {
+            dbbinom(y, rep(1L, length(y)), mu_y, phi, TRUE)
+        }
+        attr(out, "mu_y") <- mu_y
+        out
+    }
+    score_eta_fun <- function (y, mu, phis, eta_zi) {
+        phi <- exp(phis)
+        mu <- as.matrix(mu)
+        if (NCOL(y) == 2L) {
+            size <- y[, 1L] + y[, 2L]
+            y <- y[, 1L]
+        } else {
+            size <- rep(1L, length(y))
+        }
+        phi_mu <- phi * mu
+        phi_1mu <- phi * (1 - mu)
+        comp1 <- (digamma(y + phi_mu) - digamma(size - y + phi_1mu)) * phi
+        comp2 <- (digamma(phi_mu) - digamma(phi_1mu)) * phi
+        mu.eta <- switch(.link,
+                         "logit" = mu - mu * mu,
+                         "cloglog" = - (1 - mu) * log(1 - mu))
+        out <- (comp1 - comp2) * mu.eta
+        out
+    }
+    score_phis_fun <- function (y, mu, phis, eta_zi) {
+        phi <- exp(phis)
+        mu <- as.matrix(mu)
+        if (NCOL(y) == 2L) {
+            size <- y[, 1L] + y[, 2L]
+            y <- y[, 1L]
+        } else {
+            size <- rep(1L, length(y))
+        }
+        mu1 <- 1 - mu
+        phi_mu <- phi * mu
+        phi_1mu <- phi * mu1
+        comp1 <- digamma(y + phi_mu) * mu + digamma(size - y + phi_1mu) * mu1 - 
+            digamma(size + phi)
+        comp2 <- digamma(phi_mu) * mu + digamma(phi_1mu) * mu1 - digamma(phi)
+        out <- (comp1 - comp2) * phi
+        out
+    }
+    simulate <- function (n, mu, phis, eta_zi) {
+        phi <- exp(phis)
+        probs <- rbeta(n, shape1 = mu * phi, shape2 = phi * (1 - mu))
+        rbinom(n, size = 1, prob = probs)
+    }
+    structure(list(family = "beta binomial", link = stats$name, 
+                   linkfun = stats$linkfun, linkinv = stats$linkinv, log_dens = log_dens,
+                   score_eta_fun = score_eta_fun,
+                   score_phis_fun = score_phis_fun, simulate = simulate),
+              class = "family")
+}
+
+
 
 
