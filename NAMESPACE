@@ -3,7 +3,7 @@ export(mixed_model, marginal_coefs, coef, fixef, ranef, confint, anova, fitted, 
        simulate, model.matrix, model.frame, terms, formula, nobs, hurdle.poisson, 
        hurdle.negative.binomial, hurdle.lognormal, beta.fam, hurdle.beta.fam, students.t,
        scoring_rules, cr_setup, cr_marg_probs, VIF, unit.lindley, cooks.distance,
-       beta.binomial)
+       beta.binomial, Gamma.fam)
 
 importFrom("stats", "AIC", "BIC", "asOneSidedFormula", "cov2cor",
              "dbinom", "dnorm", "dpois", "fitted", "glm.fit", "logLik",
@@ -15,7 +15,7 @@ importFrom("stats", "AIC", "BIC", "asOneSidedFormula", "cov2cor",
            "rnbinom", "rpois", "ppois", "qpois", "qnbinom", "pnbinom", "dnbinom", "rbeta",
            "rlnorm", "na.pass", "formula", "family", "optim", "nlminb", "nobs", "rt",
            "as.formula", "qlogis", "complete.cases", "model.frame.default", "uniroot",
-           "cooks.distance", "update", "dgamma")
+           "cooks.distance", "update", "dgamma", "rgamma", "Gamma")
 importFrom("utils", "as.relistable", "relist")
 importFrom("MASS", "mvrnorm")
 importFrom("parallel", "makeCluster", "stopCluster", "detectCores", "parLapply")
