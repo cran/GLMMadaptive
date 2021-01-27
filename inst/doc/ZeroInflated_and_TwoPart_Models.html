@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Dimitris Rizopoulos" />
+
+<meta name="date" content="2021-01-27" />
+
+<title>Zero-Inflated and Two-Part Mixed Effects Models</title>
+
+<script src="data:application/javascript;base64,Ly8gUGFuZG9jIDIuOSBhZGRzIGF0dHJpYnV0ZXMgb24gYm90aCBoZWFkZXIgYW5kIGRpdi4gV2UgcmVtb3ZlIHRoZSBmb3JtZXIgKHRvCi8vIGJlIGNvbXBhdGlibGUgd2l0aCB0aGUgYmVoYXZpb3Igb2YgUGFuZG9jIDwgMi44KS4KZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKGUpIHsKICB2YXIgaHMgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCJkaXYuc2VjdGlvbltjbGFzcyo9J2xldmVsJ10gPiA6Zmlyc3QtY2hpbGQiKTsKICB2YXIgaSwgaCwgYTsKICBmb3IgKGkgPSAwOyBpIDwgaHMubGVuZ3RoOyBpKyspIHsKICAgIGggPSBoc1tpXTsKICAgIGlmICghL15oWzEtNl0kL2kudGVzdChoLnRhZ05hbWUpKSBjb250aW51ZTsgIC8vIGl0IHNob3VsZCBiZSBhIGhlYWRlciBoMS1oNgogICAgYSA9IGguYXR0cmlidXRlczsKICAgIHdoaWxlIChhLmxlbmd0aCA+IDApIGgucmVtb3ZlQXR0cmlidXRlKGFbMF0ubmFtZSk7CiAgfQp9KTsK"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<link rel="stylesheet" href="data:text/css,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" type="text/css" />
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Zero-Inflated and Two-Part Mixed Effects Models</h1>
+<h4 class="author">Dimitris Rizopoulos</h4>
+<h4 class="date">2021-01-27</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#mixed-models-with-an-extra-zero-part">Mixed Models with an Extra Zero Part</a>
+<ul>
+<li><a href="#zero-inflated-poisson-mixed-effects-model">Zero-Inflated Poisson Mixed Effects Model</a></li>
+<li><a href="#zero-inflated-negative-binomial-mixed-effects-model">Zero-Inflated Negative Binomial Mixed Effects Model</a></li>
+<li><a href="#two-part-mixed-effects-model-for-semi-continuous-data">Two-Part Mixed Effects Model for Semi-Continuous Data</a></li>
+<li><a href="#two-parthurdle-poisson-mixed-effects-model">Two-Part/Hurdle Poisson Mixed Effects Model</a></li>
+<li><a href="#two-parthurdle-negative-binomial-mixed-effects-model">Two-Part/Hurdle Negative Binomial Mixed Effects Model</a></li>
+</ul></li>
+</ul>
+</div>
+
+<div id="mixed-models-with-an-extra-zero-part" class="section level1">
+<h1>Mixed Models with an Extra Zero Part</h1>
+<p>Function <code>mixed_model()</code> of <strong>GLMMadaptive</strong> can also be used to fit zero-inflated and two-part mixed effects models. For both types of models, a suitable <code>family</code> object needs to be specified as outlined in <code>vignette(&quot;Custom_Models&quot;, package = &quot;GLMMadaptive&quot;)</code>, and also arguments <code>zi_fixed</code> and <code>zi_random</code> of <code>mixed_model()</code> come into play. In these arguments, the user can specify the fixed and random effects <code>formulas</code> of the logistic regression for the zero-part of the distribution of the outcome. We should note that the user has the option to leave <code>zi_random</code> set to <code>NULL</code>, in which case for the zero-part we have a logistic regression with only fixed effects and no random effects.</p>
+<p>In addition, in the specification of the <code>family</code> object, and in order to better facilitate the internal computations, the user may specify the function <code>score_eta_zi_fun</code> that calculates the derivative of the log probability density function or the log probability mass function with respect to <code>eta_zi</code> that denotes the linear predictor of the logistic regression for the zero part. Here we provide three examples to illustrate how such models can be fitted.</p>
+<div id="zero-inflated-poisson-mixed-effects-model" class="section level2">
+<h2>Zero-Inflated Poisson Mixed Effects Model</h2>
+<p>We start our illustrations by showing how we can fit a zero-inflated Poisson mixed effects model. The specification of the required <code>family</code> object is already available in the package as the object returned by <code>zi.poisson()</code>. <em>Currently, only the log link is allowed.</em> First, we simulate longitudinal data from a zero-inflated negative binomial distribution:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">100</span> <span class="co"># number of subjects</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">8</span> <span class="co"># number of measurements per subject</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>t_max <span class="ot">&lt;-</span> <span class="dv">5</span> <span class="co"># maximum follow-up time</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># we construct a data frame with the design: </span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># everyone has a baseline measurement, and then measurements at random follow-up times</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>DF <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">id =</span> <span class="fu">rep</span>(<span class="fu">seq_len</span>(n), <span class="at">each =</span> K),</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>                 <span class="at">time =</span> <span class="fu">c</span>(<span class="fu">replicate</span>(n, <span class="fu">c</span>(<span class="dv">0</span>, <span class="fu">sort</span>(<span class="fu">runif</span>(K <span class="sc">-</span> <span class="dv">1</span>, <span class="dv">0</span>, t_max))))),</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>                 <span class="at">sex =</span> <span class="fu">rep</span>(<span class="fu">gl</span>(<span class="dv">2</span>, n<span class="sc">/</span><span class="dv">2</span>, <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;male&quot;</span>, <span class="st">&quot;female&quot;</span>)), <span class="at">each =</span> K))</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># design matrices for the fixed and random effects non-zero part</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> sex <span class="sc">*</span> time, <span class="at">data =</span> DF)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>Z <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> <span class="dv">1</span>, <span class="at">data =</span> DF)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co"># design matrices for the fixed and random effects zero part</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>X_zi <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> sex, <span class="at">data =</span> DF)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>Z_zi <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> <span class="dv">1</span>, <span class="at">data =</span> DF)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>betas <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">1.5</span>, <span class="fl">0.05</span>, <span class="fl">0.05</span>, <span class="sc">-</span><span class="fl">0.03</span>) <span class="co"># fixed effects coefficients non-zero part</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>shape <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="co"># shape/size parameter of the negative binomial distribution</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>gammas <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">1.5</span>, <span class="fl">0.5</span>) <span class="co"># fixed effects coefficients zero part</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>D11 <span class="ot">&lt;-</span> <span class="fl">0.5</span> <span class="co"># variance of random intercepts non-zero part</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>D22 <span class="ot">&lt;-</span> <span class="fl">0.4</span> <span class="co"># variance of random intercepts zero part</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="co"># we simulate random effects</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="fu">sqrt</span>(D11)), <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="fu">sqrt</span>(D22)))</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="co"># linear predictor non-zero part</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>eta_y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(X <span class="sc">%*%</span> betas <span class="sc">+</span> <span class="fu">rowSums</span>(Z <span class="sc">*</span> b[DF<span class="sc">$</span>id, <span class="dv">1</span>, <span class="at">drop =</span> <span class="cn">FALSE</span>]))</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="co"># linear predictor zero part</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>eta_zi <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(X_zi <span class="sc">%*%</span> gammas <span class="sc">+</span> <span class="fu">rowSums</span>(Z_zi <span class="sc">*</span> b[DF<span class="sc">$</span>id, <span class="dv">2</span>, <span class="at">drop =</span> <span class="cn">FALSE</span>]))</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="co"># we simulate negative binomial longitudinal data</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>DF<span class="sc">$</span>y <span class="ot">&lt;-</span> <span class="fu">rnbinom</span>(n <span class="sc">*</span> K, <span class="at">size =</span> shape, <span class="at">mu =</span> <span class="fu">exp</span>(eta_y))</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="co"># we set the extra zeros</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>DF<span class="sc">$</span>y[<span class="fu">as.logical</span>(<span class="fu">rbinom</span>(n <span class="sc">*</span> K, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">prob =</span> <span class="fu">plogis</span>(eta_zi)))] <span class="ot">&lt;-</span> <span class="dv">0</span></span></code></pre></div>
+<p>A zero-inflated Poisson mixed model with only fixed effects in the zero part is fitted with the following call to <code>mixed_model()</code>:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>fm1 <span class="ot">&lt;-</span> <span class="fu">mixed_model</span>(y <span class="sc">~</span> sex <span class="sc">*</span> time, <span class="at">random =</span> <span class="sc">~</span> <span class="dv">1</span> <span class="sc">|</span> id, <span class="at">data =</span> DF,</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">zi.poisson</span>(), <span class="at">zi_fixed =</span> <span class="sc">~</span> sex)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>fm1</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; mixed_model(fixed = y ~ sex * time, random = ~1 | id, data = DF, </span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     family = zi.poisson(), zi_fixed = ~sex)</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Model:</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  family: zero-inflated poisson</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  link: log </span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Random effects covariance matrix:</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                StdDev</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept) 0.8272898</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Fixed effects:</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   1.5275644687   0.0173647260  -0.0040365383   0.0004326841 </span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Zero-part coefficients:</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept)   sexfemale </span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   -1.210597    0.498611 </span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; log-Lik: -2223.937</span></span></code></pre></div>
+<p>As noted above, only the log link is currently available for the non-zero part and the logit link for the zero part. Hence, the estimated fixed effects for the two parts are interpreted accordingly. We extend <code>fm1</code> by allowing also for random intercepts in the zero part. We should note that by default the random intercept of the non-zero part is correlated with the random intercept from the zero part:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>fm2 <span class="ot">&lt;-</span> <span class="fu">update</span>(fm1, <span class="at">zi_random =</span> <span class="sc">~</span> <span class="dv">1</span> <span class="sc">|</span> id)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>fm2</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; mixed_model(fixed = y ~ sex * time, random = ~1 | id, data = DF, </span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     family = zi.poisson(), zi_fixed = ~sex, zi_random = ~1 | </span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         id)</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Model:</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  family: zero-inflated poisson</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  link: log </span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Random effects covariance matrix:</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                 StdDev    Corr</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept)     0.7394        </span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; zi_(Intercept)  0.6917 -0.6550</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Fixed effects:</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   1.5891884685  -0.0085650817  -0.0030156086   0.0002487272 </span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Zero-part coefficients:</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept)   sexfemale </span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   -1.112309    0.427672 </span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; log-Lik: -2214.277</span></span></code></pre></div>
+<p>We test if we need the extra random effect using a likelihood ratio test:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(fm1, fm2)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         AIC     BIC  log.Lik   LRT df p.value</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; fm1 4461.87 4480.11 -2223.94                 </span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; fm2 4446.55 4470.00 -2214.28 19.32  2   1e-04</span></span></code></pre></div>
+<p>The results suggest that the extra random effect improves the fit of the model.</p>
+</div>
+<div id="zero-inflated-negative-binomial-mixed-effects-model" class="section level2">
+<h2>Zero-Inflated Negative Binomial Mixed Effects Model</h2>
+<p>We continue with the same data, but we now take into account the potential over-dispersion in the data using a zero-inflated negative binomial model. To fit this mixed model we use an almost identical syntax to what we just did above - the only difference is that we now specify as family the <code>zi.negative.binomial()</code> object:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>gm1 <span class="ot">&lt;-</span> <span class="fu">mixed_model</span>(y <span class="sc">~</span> sex <span class="sc">*</span> time, <span class="at">random =</span> <span class="sc">~</span> <span class="dv">1</span> <span class="sc">|</span> id, <span class="at">data =</span> DF,</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">zi.negative.binomial</span>(), <span class="at">zi_fixed =</span> <span class="sc">~</span> sex)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>gm1</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; mixed_model(fixed = y ~ sex * time, random = ~1 | id, data = DF, </span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     family = zi.negative.binomial(), zi_fixed = ~sex)</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Model:</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  family: zero-inflated negative binomial</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  link: log </span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Random effects covariance matrix:</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                StdDev</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept) 0.8293515</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Fixed effects:</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    1.467900626    0.029416703    0.003005305   -0.006440699 </span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Zero-part coefficients:</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept)   sexfemale </span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  -1.5554713   0.5914944 </span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; dispersion parameter:</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  2.227075 </span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; log-Lik: -1958.746</span></span></code></pre></div>
+<p>Similarly to <code>fm1</code>, in <code>gm1</code> we specified only fixed effects for the logistic regression for the zero part. We now compare this model with the zero-inflated Poisson model that allowed for a random intercept in the zero part. The comparison can be done with the <code>anova()</code> method; because the two models are not nested, we set <code>test = FALSE</code> in the call to <code>anova()</code>, i.e.:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(gm1, fm2, <span class="at">test =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         AIC     BIC  log.Lik df</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; gm1 3933.49 3954.33 -1958.75   </span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; fm2 4446.55 4470.00 -2214.28  1</span></span></code></pre></div>
+<p>We observe that accounting for the over-dispersion seems to better improve the fit than including the random intercepts term in the zero part.</p>
+</div>
+<div id="two-part-mixed-effects-model-for-semi-continuous-data" class="section level2">
+<h2>Two-Part Mixed Effects Model for Semi-Continuous Data</h2>
+<p>To further illustrate the flexibility provided by <strong>GLMMadaptive</strong> in allowing users to specify their own family objects with a specific log density function, we consider the setting of multivariate semi-continuous data. That is, continuous data with excess zeros. In the literature the class of two-part / hurdle mixed models has been proposed to analyze such data. These models specify a logistic regression for the dichotomous indicator that the outcome is zero or not, and a standard linear mixed model for the logarithmic transformation of the non-zero responses.</p>
+<p>We start again by simulating some longitudinal data from this model:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">100</span> <span class="co"># number of subjects</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">8</span> <span class="co"># number of measurements per subject</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>t_max <span class="ot">&lt;-</span> <span class="dv">5</span> <span class="co"># maximum follow-up time</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># we construct a data frame with the design: </span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># everyone has a baseline measurement, and then measurements at random follow-up times</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>DF <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">id =</span> <span class="fu">rep</span>(<span class="fu">seq_len</span>(n), <span class="at">each =</span> K),</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>                 <span class="at">time =</span> <span class="fu">c</span>(<span class="fu">replicate</span>(n, <span class="fu">c</span>(<span class="dv">0</span>, <span class="fu">sort</span>(<span class="fu">runif</span>(K <span class="sc">-</span> <span class="dv">1</span>, <span class="dv">0</span>, t_max))))),</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>                 <span class="at">sex =</span> <span class="fu">rep</span>(<span class="fu">gl</span>(<span class="dv">2</span>, n<span class="sc">/</span><span class="dv">2</span>, <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;male&quot;</span>, <span class="st">&quot;female&quot;</span>)), <span class="at">each =</span> K))</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co"># design matrices for the fixed and random effects non-zero part</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> sex <span class="sc">*</span> time, <span class="at">data =</span> DF)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>Z <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> time, <span class="at">data =</span> DF)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co"># design matrices for the fixed and random effects zero part</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>X_zi <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> sex, <span class="at">data =</span> DF)</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>Z_zi <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> <span class="dv">1</span>, <span class="at">data =</span> DF)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>betas <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">2.13</span>, <span class="sc">-</span><span class="fl">0.25</span>, <span class="fl">0.24</span>, <span class="sc">-</span><span class="fl">0.05</span>) <span class="co"># fixed effects coefficients non-zero part</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>sigma <span class="ot">&lt;-</span> <span class="fl">0.5</span> <span class="co"># standard deviation error terms non-zero part</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>gammas <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">1.5</span>, <span class="fl">0.5</span>) <span class="co"># fixed effects coefficients zero part</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>D11 <span class="ot">&lt;-</span> <span class="fl">0.5</span> <span class="co"># variance of random intercepts non-zero part</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>D22 <span class="ot">&lt;-</span> <span class="fl">0.1</span> <span class="co"># variance of random slopes non-zero part</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>D33 <span class="ot">&lt;-</span> <span class="fl">0.4</span> <span class="co"># variance of random intercepts zero part</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="co"># we simulate random effects</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="fu">sqrt</span>(D11)), <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="fu">sqrt</span>(D22)), <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="fu">sqrt</span>(D33)))</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="co"># linear predictor non-zero part</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>eta_y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(X <span class="sc">%*%</span> betas <span class="sc">+</span> <span class="fu">rowSums</span>(Z <span class="sc">*</span> b[DF<span class="sc">$</span>id, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">drop =</span> <span class="cn">FALSE</span>]))</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="co"># linear predictor zero part</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>eta_zi <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(X_zi <span class="sc">%*%</span> gammas <span class="sc">+</span> <span class="fu">rowSums</span>(Z_zi <span class="sc">*</span> b[DF<span class="sc">$</span>id, <span class="dv">3</span>, <span class="at">drop =</span> <span class="cn">FALSE</span>]))</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a><span class="co"># we simulate log-normal longitudinal data</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>DF<span class="sc">$</span>y <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">rnorm</span>(n <span class="sc">*</span> K, <span class="at">mean =</span> eta_y, <span class="at">sd =</span> sigma))</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a><span class="co"># we set the zeros from the logistic regression</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>DF<span class="sc">$</span>y[<span class="fu">as.logical</span>(<span class="fu">rbinom</span>(n <span class="sc">*</span> K, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">prob =</span> <span class="fu">plogis</span>(eta_zi)))] <span class="ot">&lt;-</span> <span class="dv">0</span></span></code></pre></div>
+<p>To fit the two-part mixed model for log-normal data we can use the already build-in <code>hurdle.lognormal()</code> family object. However, just as an illustration, and to show that users can define their own family objects to be used in <code>mixed_model()</code>, we explain how exactly <code>hurdle.lognormal()</code> is specified. To define the family object: The minimal requirement is to specify the <code>log_dens</code> component and the link function; however, as also explained in the <a href="http://www.drizopoulos.com/vignettes/Custom_Models.html">Custom Models</a> vignette, the internal calculations will be faster and more stable if the user also specifies the score vector for the linear predictor of the non-zero part (function <code>score_eta_fun()</code>), the derivative of the log density with respect to <code>phis</code> (function <code>score_phis_fun()</code>), and because we have a model with a zero part, also the derivative of the log density with respect to the linear predictor of the zero part (function <code>score_eta_zi_fun()</code>). Finally, for being able to simulate from the model using the <code>simulate()</code> method, the function <code>simulate()</code> within the family object can also be specified. Hence, the family object for the two-part model is defined as:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>hurdle.lognormal <span class="ot">&lt;-</span> <span class="cf">function</span> () {</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    stats <span class="ot">&lt;-</span> <span class="fu">make.link</span>(<span class="st">&quot;identity&quot;</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    log_dens <span class="ot">&lt;-</span> <span class="cf">function</span> (y, eta, mu_fun, phis, eta_zi) {</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>        sigma <span class="ot">&lt;-</span> <span class="fu">exp</span>(phis)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>        <span class="co"># binary indicator for y &gt; 0</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>        ind <span class="ot">&lt;-</span> y <span class="sc">&gt;</span> <span class="dv">0</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        <span class="co"># non-zero part</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>        eta <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(eta)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>        eta_zi <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(eta_zi)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>        out <span class="ot">&lt;-</span> eta</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>        out[ind, ] <span class="ot">&lt;-</span> <span class="fu">plogis</span>(eta_zi[ind, ], <span class="at">lower.tail =</span> <span class="cn">FALSE</span>, <span class="at">log.p =</span> <span class="cn">TRUE</span>) <span class="sc">+</span> </span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>            <span class="fu">dnorm</span>(<span class="at">x =</span> <span class="fu">log</span>(y[ind]), <span class="at">mean =</span> eta[ind, ], <span class="at">sd =</span> sigma, <span class="at">log =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>        <span class="co"># zero part</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>        out[<span class="sc">!</span>ind, ] <span class="ot">&lt;-</span> <span class="fu">plogis</span>(eta_zi[<span class="sc">!</span>ind, ], <span class="at">log.p =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>        <span class="fu">attr</span>(out, <span class="st">&quot;mu_y&quot;</span>) <span class="ot">&lt;-</span> eta</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>        out</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    score_eta_fun <span class="ot">&lt;-</span> <span class="cf">function</span> (y, mu, phis, eta_zi) {</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>        sigma <span class="ot">&lt;-</span> <span class="fu">exp</span>(phis)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>        <span class="co"># binary indicator for y &gt; 0</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>        ind <span class="ot">&lt;-</span> y <span class="sc">&gt;</span> <span class="dv">0</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>        <span class="co"># non-zero part</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>        eta <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(mu)</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>        out <span class="ot">&lt;-</span> eta</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>        out[<span class="sc">!</span>ind, ] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>        out[ind, ] <span class="ot">&lt;-</span> (<span class="fu">log</span>(y[ind]) <span class="sc">-</span> eta[ind, ]) <span class="sc">/</span> sigma<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>        out</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>    score_eta_zi_fun <span class="ot">&lt;-</span> <span class="cf">function</span> (y, mu, phis, eta_zi) {</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>        ind <span class="ot">&lt;-</span> y <span class="sc">&gt;</span> <span class="dv">0</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>        probs <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="fu">as.matrix</span>(eta_zi))</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>        out <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> probs</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>        out[ind, ] <span class="ot">&lt;-</span> <span class="sc">-</span> probs[ind, ]</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>        out</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>    score_phis_fun <span class="ot">&lt;-</span> <span class="cf">function</span> (y, mu, phis, eta_zi) {</span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>        sigma <span class="ot">&lt;-</span> <span class="fu">exp</span>(phis)</span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>        <span class="co"># binary indicator for y &gt; 0</span></span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>        ind <span class="ot">&lt;-</span> y <span class="sc">&gt;</span> <span class="dv">0</span></span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>        <span class="co"># non-zero part</span></span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>        eta <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(mu)</span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>        out <span class="ot">&lt;-</span> eta</span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>        out[<span class="sc">!</span>ind, ] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>        out[ind, ] <span class="ot">&lt;-</span> <span class="sc">-</span> <span class="dv">1</span> <span class="sc">+</span> (<span class="fu">log</span>(y[ind]) <span class="sc">-</span> eta[ind, ])<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> sigma<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>        out</span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a>    simulate <span class="ot">&lt;-</span> <span class="cf">function</span> (n, mu, phis, eta_zi) {</span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>        y <span class="ot">&lt;-</span> <span class="fu">rlnorm</span>(<span class="at">n =</span> n, <span class="at">meanlog =</span> mu, <span class="at">sdlog =</span> <span class="fu">exp</span>(phis))</span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a>        y[<span class="fu">as.logical</span>(<span class="fu">rbinom</span>(n, <span class="dv">1</span>, <span class="fu">plogis</span>(eta_zi)))] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>        y</span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>    <span class="fu">structure</span>(<span class="fu">list</span>(<span class="at">family =</span> <span class="st">&quot;two-part log-normal&quot;</span>, <span class="at">link =</span> stats<span class="sc">$</span>name, </span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>                   <span class="at">linkfun =</span> stats<span class="sc">$</span>linkfun, <span class="at">linkinv =</span> stats<span class="sc">$</span>linkinv, <span class="at">log_dens =</span> log_dens,</span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>                   <span class="at">score_eta_fun =</span> score_eta_fun, <span class="at">score_eta_zi_fun =</span> score_eta_zi_fun,</span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a>                   <span class="at">score_phis_fun =</span> score_phis_fun, <span class="at">simulate =</span> simulate),</span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a>              <span class="at">class =</span> <span class="st">&quot;family&quot;</span>)</span>
+<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>Then to fit the model, we provide the user-defined family object in the <code>family</code> argument of <code>mixed_model()</code>, specifying also that we have one dispersion parameter in the family (i.e., <code>n_phis = 1</code>), and that in the zero part we only include fixed effects:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>km1 <span class="ot">&lt;-</span> <span class="fu">mixed_model</span>(y <span class="sc">~</span> sex <span class="sc">*</span> time, <span class="at">random =</span> <span class="sc">~</span> <span class="dv">1</span> <span class="sc">|</span> id, <span class="at">data =</span> DF, </span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                  <span class="at">family =</span> <span class="fu">hurdle.lognormal</span>(), <span class="at">n_phis =</span> <span class="dv">1</span>,</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                  <span class="at">zi_fixed =</span> <span class="sc">~</span> sex)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>km1</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; mixed_model(fixed = y ~ sex * time, random = ~1 | id, data = DF, </span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     family = hurdle.lognormal(), zi_fixed = ~sex, n_phis = 1)</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Model:</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  family: two-part log-normal</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  link: identity </span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Random effects covariance matrix:</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                StdDev</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept) 0.9609426</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Fixed effects:</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    -2.08122468    -0.24046281     0.22303981    -0.05686286 </span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Zero-part coefficients:</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept)   sexfemale </span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  -1.6034499   0.6713555 </span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; phi parameters:</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  -0.3348787 </span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; log-Lik: -1214.208</span></span></code></pre></div>
+<p>The estimated standard deviation for the error terms is <code>exp(phis) =</code> 0.7 We extend the model by allowing for a random intercept in the zero-part, but using the <code>||</code> symbol in the <code>random</code> argument we specify the covariance matrix of the random effects is diagonal; hence, that the two random intercepts terms are uncorrelated:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>km2 <span class="ot">&lt;-</span> <span class="fu">update</span>(km1, <span class="at">random =</span> <span class="sc">~</span> <span class="dv">1</span> <span class="sc">||</span> id, <span class="at">zi_random =</span> <span class="sc">~</span> <span class="dv">1</span> <span class="sc">|</span> id)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>km2</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; mixed_model(fixed = y ~ sex * time, random = ~1 || id, data = DF, </span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     family = hurdle.lognormal(), zi_fixed = ~sex, zi_random = ~1 | </span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         id, n_phis = 1)</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Model:</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  family: two-part log-normal</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  link: identity </span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Random effects covariance matrix:</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                StdDev</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept)    0.9609</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; zi_(Intercept) 0.6043</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Fixed effects:</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     -2.0811898     -0.2405682      0.2230215     -0.0568855 </span></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Zero-part coefficients:</span></span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept)   sexfemale </span></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  -1.7160430   0.7096562 </span></span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; phi parameters:</span></span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  -0.3349759 </span></span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; log-Lik: -1210.313</span></span></code></pre></div>
+<p>For zero-inflated or hurdle models the <code>marginal_coefs()</code> functions provides the marginalized coefficients corresponding the average mixture response variable, i.e., <span class="math display">\[(1 - \pi) \times E(Y),\]</span> where <span class="math inline">\(\pi\)</span> denotes the probability of being zero, and <span class="math inline">\(Y\)</span> the response random variable for the non-zero part. For example, in the case of the hurdle log-normal family, we get the marginalized coefficients for <span class="math inline">\((1 - \pi) \times E\{\log(Y)\}\)</span>, e.g.,</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">marginal_coefs</span>(km2)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;        -1.7311         0.0626         0.1852        -0.0661</span></span></code></pre></div>
+<p>Finally, we show how the <code>simulate()</code> method can be used to perform a replication / posterior predictive check. In particular, in the following code we compare the empirical distribution function estimated in the observed data with estimates of the empirical distribution function obtained from simulated/replicated data from the model. In the call to <code>simulate()</code> below we also specify to account for the variability in the maximum likelihood estimates by setting <code>acount_MLEs_var = TRUE</code>:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="fl">2.5</span>, <span class="fl">2.5</span>, <span class="dv">0</span>, <span class="dv">0</span>), <span class="at">mgp =</span> <span class="fu">c</span>(<span class="fl">1.1</span>, <span class="fl">0.5</span>, <span class="dv">0</span>), <span class="at">cex.axis =</span> <span class="fl">0.7</span>, <span class="at">cex.lab =</span> <span class="fl">0.8</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> DF<span class="sc">$</span>y</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>y[y <span class="sc">&gt;</span> <span class="dv">0</span>] <span class="ot">&lt;-</span> <span class="fu">log</span>(y[y <span class="sc">&gt;</span> <span class="dv">0</span>])</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>x_vals <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">min</span>(y), <span class="fu">max</span>(y), <span class="at">length.out =</span> <span class="dv">500</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">simulate</span>(km2, <span class="at">nsim =</span> <span class="dv">30</span>, <span class="at">acount_MLEs_var =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>ind <span class="ot">&lt;-</span> out <span class="sc">&gt;</span> <span class="fu">sqrt</span>(.Machine<span class="sc">$</span>double.eps)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>out[ind] <span class="ot">&lt;-</span> <span class="fu">log</span>(out[ind])</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>rep_y <span class="ot">&lt;-</span> <span class="fu">apply</span>(out, <span class="dv">2</span>, <span class="cf">function</span> (x, x_vals) <span class="fu">ecdf</span>(x)(x_vals), <span class="at">x_vals =</span> x_vals)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="fu">matplot</span>(x_vals, rep_y, <span class="at">type =</span> <span class="st">&quot;l&quot;</span>, <span class="at">lty =</span> <span class="dv">1</span>, <span class="at">col =</span> <span class="st">&quot;lightgrey&quot;</span>, </span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab =</span> <span class="st">&quot;Response Variable&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;Empirical CDF&quot;</span>)</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_vals, <span class="fu">ecdf</span>(y)(x_vals))</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">&quot;bottomright&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;log replicated data&quot;</span>, <span class="st">&quot;log observed data&quot;</span>), <span class="at">lty =</span> <span class="dv">1</span>, </span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> <span class="fu">c</span>(<span class="st">&quot;lightgrey&quot;</span>, <span class="st">&quot;black&quot;</span>), <span class="at">bty =</span> <span class="st">&quot;n&quot;</span>, <span class="at">cex =</span> <span class="fl">0.8</span>)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" style="display: block; margin: auto;" /></p>
+</div>
+<div id="two-parthurdle-poisson-mixed-effects-model" class="section level2">
+<h2>Two-Part/Hurdle Poisson Mixed Effects Model</h2>
+<p>An alternative modeling framework to account for high percentages of 0 in count data is hurdle models. These models are similar to the two-part model for semi-continuous data presented above. The difference is that for the positive part we have positive counts instead of a positive continuous outcome. For the positive counts, a truncated at zero Poisson or negative binomial distribution is typically used. Both hurdle Poisson and hurdle negative binomial mixed models can be fitted by <code>mixed_model()</code> using the family objects <code>hurdle.poisson()</code> and <code>hurdle.negative.binomial</code>, respectively.</p>
+<p>To illustrate how these models are fitted, we simulate some longitudinal data from a hurdle negative binomial model using the code:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">100</span> <span class="co"># number of subjects</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">8</span> <span class="co"># number of measurements per subject</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>t_max <span class="ot">&lt;-</span> <span class="dv">5</span> <span class="co"># maximum follow-up time</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co"># we construct a data frame with the design: </span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co"># everyone has a baseline measurement, and then measurements at random follow-up times</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>DF <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">id =</span> <span class="fu">rep</span>(<span class="fu">seq_len</span>(n), <span class="at">each =</span> K),</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>                 <span class="at">time =</span> <span class="fu">c</span>(<span class="fu">replicate</span>(n, <span class="fu">c</span>(<span class="dv">0</span>, <span class="fu">sort</span>(<span class="fu">runif</span>(K <span class="sc">-</span> <span class="dv">1</span>, <span class="dv">0</span>, t_max))))),</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>                 <span class="at">sex =</span> <span class="fu">rep</span>(<span class="fu">gl</span>(<span class="dv">2</span>, n<span class="sc">/</span><span class="dv">2</span>, <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;male&quot;</span>, <span class="st">&quot;female&quot;</span>)), <span class="at">each =</span> K))</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="co"># design matrices for the fixed and random effects non-zero part</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> sex <span class="sc">*</span> time, <span class="at">data =</span> DF)</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>Z <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> time, <span class="at">data =</span> DF)</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="co"># design matrices for the fixed and random effects zero part</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>X_zi <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> sex, <span class="at">data =</span> DF)</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>Z_zi <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> <span class="dv">1</span>, <span class="at">data =</span> DF)</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>betas <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">1.5</span>, <span class="fl">0.05</span>, <span class="fl">0.05</span>, <span class="sc">-</span><span class="fl">0.03</span>) <span class="co"># fixed effects coefficients non-zero part</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>shape <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="co"># shape/size parameter of the negative binomial distribution</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>gammas <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">1.5</span>, <span class="fl">0.5</span>) <span class="co"># fixed effects coefficients zero part</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>D11 <span class="ot">&lt;-</span> <span class="fl">0.5</span> <span class="co"># variance of random intercepts non-zero part</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>D22 <span class="ot">&lt;-</span> <span class="fl">0.1</span> <span class="co"># variance of random slopes non-zero part</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>D33 <span class="ot">&lt;-</span> <span class="fl">0.4</span> <span class="co"># variance of random intercepts zero part</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a><span class="co"># we simulate random effects</span></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="fu">sqrt</span>(D11)), <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="fu">sqrt</span>(D22)), <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="fu">sqrt</span>(D33)))</span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a><span class="co"># linear predictor non-zero part</span></span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>eta_y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(X <span class="sc">%*%</span> betas <span class="sc">+</span> <span class="fu">rowSums</span>(Z <span class="sc">*</span> b[DF<span class="sc">$</span>id, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">drop =</span> <span class="cn">FALSE</span>]))</span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a><span class="co"># linear predictor zero part</span></span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>eta_zi <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(X_zi <span class="sc">%*%</span> gammas <span class="sc">+</span> <span class="fu">rowSums</span>(Z_zi <span class="sc">*</span> b[DF<span class="sc">$</span>id, <span class="dv">3</span>, <span class="at">drop =</span> <span class="cn">FALSE</span>]))</span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a><span class="co"># we simulate truncated at zero negative binomial longitudinal data</span></span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>lower <span class="ot">&lt;-</span> <span class="fu">pnbinom</span>(<span class="dv">0</span>, <span class="at">mu =</span> <span class="fu">exp</span>(eta_y), <span class="at">size =</span> shape)</span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>u <span class="ot">&lt;-</span> <span class="fu">runif</span>(n <span class="sc">*</span> K, <span class="at">min =</span> lower, <span class="at">max =</span> <span class="dv">1</span>)</span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>DF<span class="sc">$</span>y <span class="ot">&lt;-</span> <span class="fu">qnbinom</span>(u, <span class="at">mu =</span> <span class="fu">exp</span>(eta_y), <span class="at">size =</span> shape)</span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a><span class="co"># we set the zeros from the logistic regression</span></span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>DF<span class="sc">$</span>y[<span class="fu">as.logical</span>(<span class="fu">rbinom</span>(n <span class="sc">*</span> K, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">prob =</span> <span class="fu">plogis</span>(eta_zi)))] <span class="ot">&lt;-</span> <span class="dv">0</span></span></code></pre></div>
+<p>The following code fits a hurdle Poisson mixed effects model. In the fixed-effects part for the positive counts we include the main effects of <code>sex</code> and <code>time</code> and their interaction, and in the random-effects for the positive counts random intercepts and random slopes. For the zero-part we only include a fixed-effects part, using argument <code>zi_fixed</code>, with <code>sex</code> as the predictor:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>dm1 <span class="ot">&lt;-</span> <span class="fu">mixed_model</span>(y <span class="sc">~</span> sex <span class="sc">*</span> time, <span class="at">random =</span> <span class="sc">~</span> time <span class="sc">|</span> id, <span class="at">data =</span> DF, </span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                  <span class="at">family =</span> <span class="fu">hurdle.poisson</span>(), <span class="at">zi_fixed =</span> <span class="sc">~</span> sex)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>dm1</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; mixed_model(fixed = y ~ sex * time, random = ~time | id, data = DF, </span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     family = hurdle.poisson(), zi_fixed = ~sex)</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Model:</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  family: hurdle poisson</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  link: log </span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Random effects covariance matrix:</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;              StdDev    Corr</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept)  0.8231        </span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; time         0.3649 -0.3136</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Fixed effects:</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     1.52797499     0.08041345     0.08988228    -0.09127713 </span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Zero-part coefficients:</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept)   sexfemale </span></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  -1.4178427   0.4857483 </span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; log-Lik: -2802.3</span></span></code></pre></div>
+<p>Currently, only the log-link is implemented for the <code>hurdle.poisson()</code> family. The output is similar as in the case of the zero-inflated models. However, it has been noted that the fixed-effects coefficients for the positive counts part relate to the mean <span class="math inline">\(\mu\)</span> of Poisson distribution that includes the zeros, not the mean for those who experience the event. The mean for those who experience more than one events is <span class="math inline">\(\mu / (1 - e^{-\mu})\)</span>. Hence, a <span class="math inline">\(\beta = 0.1\)</span> cannot be interpreted as reflecting a <span class="math inline">\(e^\beta =\)</span> 10% increase in the mean of the subjects who experience the events.</p>
+<p>We extend model <code>dm1</code> by also including a random intercept for the zero-part. As we have done above, this is achieved by specifying the <code>zi_random</code> argument, i.e.:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>dm2 <span class="ot">&lt;-</span> <span class="fu">update</span>(dm1, <span class="at">zi_random =</span> <span class="sc">~</span> <span class="dv">1</span> <span class="sc">|</span> id)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>dm2</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; mixed_model(fixed = y ~ sex * time, random = ~time | id, data = DF, </span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     family = hurdle.poisson(), zi_fixed = ~sex, zi_random = ~1 | </span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         id)</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Model:</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  family: hurdle poisson</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  link: log </span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Random effects covariance matrix:</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                 StdDev    Corr        </span></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept)     0.8226  (Intr)    time</span></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; time            0.3644 -0.3125        </span></span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; zi_(Intercept)  0.6584 -0.0065  0.0636</span></span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Fixed effects:</span></span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span></span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     1.52792269     0.08389745     0.09206185    -0.08020395 </span></span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Zero-part coefficients:</span></span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept)   sexfemale </span></span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  -1.5398382   0.5175922 </span></span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; log-Lik: -2797.307</span></span></code></pre></div>
+<p>The likelihood ratio test between the two models is computed with the <code>anova()</code> method:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(dm1, dm2)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         AIC     BIC  log.Lik  LRT df p.value</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; dm1 5622.60 5646.05 -2802.30                </span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; dm2 5618.61 5649.88 -2797.31 9.99  3  0.0187</span></span></code></pre></div>
+<p>The result indicates that the extra random effect for the zero-part improves the fit of the model.</p>
+</div>
+<div id="two-parthurdle-negative-binomial-mixed-effects-model" class="section level2">
+<h2>Two-Part/Hurdle Negative Binomial Mixed Effects Model</h2>
+<p>We continue our illustration of hurdle models by fitting the hurdle negative binomial mixed model. The only change from the previous syntax we used is the name of the family object, namely, we use now <code>hurdle.negative.binomial()</code>. The code below fits exactly the same model as model <code>dm1</code> above, but using now the negative binomial distribution for the positive counts:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>hm1 <span class="ot">&lt;-</span> <span class="fu">mixed_model</span>(y <span class="sc">~</span> sex <span class="sc">*</span> time, <span class="at">random =</span> <span class="sc">~</span> time <span class="sc">|</span> id, <span class="at">data =</span> DF, </span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                  <span class="at">family =</span> <span class="fu">hurdle.negative.binomial</span>(), <span class="at">zi_fixed =</span> <span class="sc">~</span> sex)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>hm1</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; mixed_model(fixed = y ~ sex * time, random = ~time | id, data = DF, </span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     family = hurdle.negative.binomial(), zi_fixed = ~sex)</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Model:</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  family: hurdle negative binomial</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  link: log </span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Random effects covariance matrix:</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;              StdDev    Corr</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept)  0.7305        </span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; time         0.3249 -0.1170</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Fixed effects:</span></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     1.48250218     0.07508276     0.10249953    -0.08978082 </span></span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Zero-part coefficients:</span></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept)   sexfemale </span></span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  -1.4178427   0.4857483 </span></span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; phi parameters:</span></span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  0.6778918 </span></span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; log-Lik: -2181.468</span></span></code></pre></div>
+<p>Also for the <code>hurdle.negative.binomial()</code> family only the log-link is implemented. The structure of the output is identical to what we had for the hurdle Poisson model. Again we should note that the fixed-effects coefficients for the positive part have an interpretation for the mean of the entire distribution, not only for the positive counts.</p>
+<p>We update again the fitted model <code>hm1</code> by including a random intercept for the zero-part:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>hm2 <span class="ot">&lt;-</span> <span class="fu">update</span>(hm1, <span class="at">zi_random =</span> <span class="sc">~</span> <span class="dv">1</span> <span class="sc">|</span> id)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>hm2</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; mixed_model(fixed = y ~ sex * time, random = ~time | id, data = DF, </span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     family = hurdle.negative.binomial(), zi_fixed = ~sex, zi_random = ~1 | </span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         id)</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Model:</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  family: hurdle negative binomial</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  link: log </span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Random effects covariance matrix:</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                 StdDev    Corr        </span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept)     0.7315  (Intr)    time</span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; time            0.3258 -0.1155        </span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; zi_(Intercept)  0.6598 -0.0517  0.1412</span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Fixed effects:</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    (Intercept)      sexfemale           time sexfemale:time </span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     1.47627667     0.07040678     0.10535938    -0.08613120 </span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Zero-part coefficients:</span></span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; (Intercept)   sexfemale </span></span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  -1.5420047   0.5197229 </span></span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; phi parameters:</span></span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  0.6759598 </span></span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; log-Lik: -2176.312</span></span></code></pre></div>
+<p>The likelihood ratio test between the two models is computed with the <code>anova()</code> method:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(hm1, hm2)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         AIC     BIC  log.Lik   LRT df p.value</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; hm1 4382.94 4408.99 -2181.47                 </span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; hm2 4378.62 4412.49 -2176.31 10.31  3  0.0161</span></span></code></pre></div>
+<p>The result again indicates that the extra random effect for the zero-part improves the fit of the model.</p>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

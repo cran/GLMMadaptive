@@ -1,7 +1,7 @@
 GLMMadaptive: Generalized Linear Mixed Models using Adaptive Gaussian Quadrature
 ================
 
-[![Travis-CI Build Status](https://travis-ci.org/drizopoulos/GLMMadaptive.svg?branch=master)](https://travis-ci.org/drizopoulos/GLMMadaptive) [![CRAN status](http://www.r-pkg.org/badges/version/GLMMadaptive)](https://cran.r-project.org/package=GLMMadaptive) [![](https://cranlogs.r-pkg.org/badges/grand-total/GLMMadaptive)](https://CRAN.R-project.org/package=GLMMadaptive) [![Download counter](http://cranlogs.r-pkg.org/badges/GLMMadaptive)](https://cran.r-project.org/package=GLMMadaptive) 
+[![R build status](https://github.com/drizopoulos/GLMMadaptive/workflows/R-CMD-check/badge.svg)](https://github.com/drizopoulos/GLMMadaptive/actions) [![CRAN status](http://www.r-pkg.org/badges/version/GLMMadaptive)](https://cran.r-project.org/package=GLMMadaptive) [![](https://cranlogs.r-pkg.org/badges/grand-total/GLMMadaptive)](https://CRAN.R-project.org/package=GLMMadaptive) [![Download counter](http://cranlogs.r-pkg.org/badges/GLMMadaptive)](https://cran.r-project.org/package=GLMMadaptive) 
 [![Rdoc](https://www.rdocumentation.org/badges/version/GLMMadaptive)](https://www.rdocumentation.org/packages/GLMMadaptive)
 
 <img src="man/figures/logo.png" height="205" align="right"/>
@@ -40,7 +40,9 @@ object.
 `hurdle.negative.binomial()` family objects.
 
 - Two-part/hurdle mixed models for semi-continuous normal data using the 
-`hurdle.lognormal()` family objects.
+`hurdle.lognormal()` family object.
+
+- Mixed models for censored normal data using the `censored.normal()` family object.
 
 - Continuation ratio mixed models for ordinal data using functions `cr_setup()` and `cr_marg_probs()`.
 
@@ -48,6 +50,8 @@ object.
 family objects.
 
 - Gamma mixed effects models using the `Gamma()` or `Gamma.fam()` family object.
+
+- Linear mixed effects models with right and left censored data using the `censored.normal()` family object.
 
 - Users may also specify their own log-density function for the repeated measurements 
 response variable, and the internal algorithms will take care of the optimization.

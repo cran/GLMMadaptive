@@ -38,7 +38,9 @@ mixed_model <- function (fixed, random, data, family, weights = NULL,
         family <- Gamma.fam()
     }
     known_families <- c("binomial", "poisson", "negative binomial", "Gamma")
-    data <- orig_data <- as.data.frame(data) # in case 'data' is a tibble
+    if (inherits(data, "tbl_df") || inherits(data, "tbl"))
+        data <- as.data.frame(data) # in case 'data' is a tibble
+    orig_data <- data
     groups <- unique(c(all.vars(getID_Formula(random)), 
                        if (!is.null(zi_random)) all.vars(getID_Formula(zi_random))))
     data[groups] <- lapply(data[groups], function (x) if (!is.factor(x)) factor(x) else x)
@@ -160,6 +162,8 @@ mixed_model <- function (fixed, random, data, family, weights = NULL,
                 glm.fit(X, y, family = poisson(), offset = offset)$coefficients
             else if (family$family == "Gamma")
                 glm.fit(X, y, family = Gamma(), offset = offset)$coefficients
+            else if (family$family == "censored normal")
+                glm.fit(X, y, family = gaussian(), offset = offset)$coefficients
             else
                 glm.fit(X, y, family = family, offset = offset)$coefficients
         } else {
@@ -238,7 +242,8 @@ mixed_model <- function (fixed, random, data, family, weights = NULL,
         if (family$family %in% c("negative binomial", "zero-inflated negative binomial",
                                  "hurdle negative binomial", "hurdle log-normal",
                                  "beta", "hurdle beta", "Conway Maxwell Poisson", 
-                                 "Gamma")) {
+                                 "Gamma", "censored normal", "beta binomial",
+                                 "Student's-t")) {
             n_phis <- 1
         } else if (is.null(n_phis)) {
             stop("argument 'n_phis' needs to be specified.\n")
