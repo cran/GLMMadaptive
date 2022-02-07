@@ -2,7 +2,7 @@ logLik_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi,
                           canonical, user_defined, Xty, Xty_weights, log_dens, mu_fun, var_fun, 
                           mu.eta_fun, score_eta_fun, score_eta_zi_fun, score_phis_fun, 
                           list_thetas, diag_D, penalized, pen_mu, pen_invSigma, pen_df,
-                          weights) {
+                          weights, i_contributions = FALSE) {
     thetas <- relist(thetas, skeleton = list_thetas)
     betas <- thetas$betas
     phis <- thetas$phis
@@ -30,13 +30,12 @@ logLik_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi,
     log_p_yb <- unname(rowsum(log_Lik, id, reorder = FALSE))
     log_p_b <- matrix(dmvnorm(b, rep(0, nRE), D, TRUE),
                       nrow(log_p_yb), ncol(log_p_yb), byrow = TRUE)
-    #p_yb <- exp(log_p_yb + log_p_b)
-    #if (any(zero_ind <- p_yb == 0.0)) {
-    #    p_yb[zero_ind] <- 1e-300
-    #}
-    #p_y <- c(p_yb %*% wGH) * dets
     log_p_y <- rowLogSumExps(log_p_yb + log_p_b + log_wGH) + log_dets
-    out <- - sum(if (is.null(weights)) log_p_y else weights * log_p_y, na.rm = TRUE)
+    out <- if (i_contributions) {
+        - if (is.null(weights)) log_p_y else weights * log_p_y
+    } else {
+        - sum(if (is.null(weights)) log_p_y else weights * log_p_y, na.rm = TRUE)
+    }
     if (penalized)
         out <- out - dmvt(betas, mu = pen_mu, invSigma = pen_invSigma, df = pen_df)
     out
@@ -73,13 +72,6 @@ score_mixed <- function (thetas, id, y, N, X, Z, offset, X_zi, Z_zi, offset_zi, 
     log_p_yb <- unname(rowsum(log_Lik, id, reorder = FALSE))
     log_p_b <- matrix(dmvnorm(b, rep(0, nRE), D, TRUE),
                       nrow(log_p_yb), ncol(log_p_yb), byrow = TRUE)
-    # log penalty include here dmvt(betas, pen_mean, invSigma = pen_invsds, df = pen_df)
-    #p_yb <- exp(log_p_yb + log_p_b)
-    #if (any(zero_ind <- p_yb == 0.0)) {
-    #    p_yb[zero_ind] <- 1e-300
-    #}
-    #p_y <- c(p_yb %*% wGH)
-    #p_by <- p_yb / p_y
     log_p_yb_b <- log_p_yb + log_p_b
     log_p_y <- rowLogSumExps(log_p_yb_b + log_wGH)
     p_by <- exp(log_p_yb_b - log_p_y)
@@ -768,6 +760,69 @@ hurdle.negative.binomial <- function () {
                    score_eta_fun = score_eta_fun, score_eta_zi_fun = score_eta_zi_fun,
                    score_phis_fun = score_phis_fun,
                    simulate = simulate),
+              class = "family")
+}
+
+zi.binomial <- function () {
+    stats <- make.link(link = "logit")
+    log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
+        # the log density function
+        # Binomial part
+        mu <- mu_fun(eta)
+        y <- as.matrix(y)
+        N <- if (ncol(y) == 2L) y[, 1L] + y[, 2L] else rep(1L, nrow(y))
+        out <- as.matrix(dbinom(y[, 1L], N, mu, TRUE))
+        # ZI part
+        ind_y0 <- y[, 1L] == 0
+        ind_y1 <- y[, 1L] > 0
+        pis <- as.matrix(plogis(eta_zi))
+        # combined
+        out[ind_y0, ] <- log(pis[ind_y0, ] + (1 - pis[ind_y0, ]) * exp(out[ind_y0, ]))
+        out[ind_y1, ] <- log(1 - pis[ind_y1, ]) + out[ind_y1, ]
+        attr(out, "mu_y") <- mu
+        out
+    }
+    score_eta_fun <- function (y, mu, phis, eta_zi) {
+        # Binomial part
+        mu <- as.matrix(mu)
+        y <- as.matrix(y)
+        N <- if (ncol(y) == 2L) y[, 1L] + y[, 2L] else rep(1L, nrow(y))
+        out <- y[, 1L] * (1 - mu) - (N - y[, 1L]) * mu
+        # ZI part
+        ind_y0 <- y[, 1L] == 0
+        eta_zi <- as.matrix(eta_zi)
+        pis <- plogis(eta_zi[ind_y0, ])
+        mu0 <- mu[ind_y0, ]
+        N0 <- N[ind_y0]
+        pis1 <- 1 - pis
+        den <- pis + pis1 * (1 - mu0)^N0
+        out[ind_y0, ] <- - (N0 * mu0 * pis1 * (1 - mu0)^N0) / den
+        out
+    }
+    score_eta_zi_fun <- function (y, mu, phis, eta_zi) {
+        y <- as.matrix(y)
+        N <- if (ncol(y) == 2L) y[, 1L] + y[, 2L] else rep(1L, nrow(y))
+        ind_y0 <- y[, 1L] == 0
+        ind_y1 <- y[, 1L] > 0
+        pis <- as.matrix(plogis(eta_zi))
+        mu <- as.matrix(mu)
+        # Binomial part
+        out <- mu
+        out[ind_y1, ] <- - pis[ind_y1, ]
+        # ZI part
+        mu0 <- mu[ind_y0, ]
+        N0 <- N[ind_y0]
+        pis1 <- 1 - pis[ind_y0, ]
+        FF <- (1 - mu0)^N0
+        den <- pis[ind_y0, ] + pis1 * FF
+        out[ind_y0, ] <- pis[ind_y0, ] * pis1 * (1 - FF) / den
+        out
+    }
+    structure(list(family = "zero-inflated binomial", link = stats$name, 
+                   linkfun = stats$linkfun, linkinv = stats$linkinv, log_dens = log_dens,
+                   score_eta_fun = score_eta_fun,
+                   score_eta_zi_fun = score_eta_zi_fun,
+                   score_phis_fun = NULL),
               class = "family")
 }
 
