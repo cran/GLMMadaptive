@@ -508,8 +508,9 @@ residuals.MixMod <- function (object, type = c("mean_subject", "subject_specific
 marginal_coefs <- function (object, ...) UseMethod("marginal_coefs")
 
 marginal_coefs.MixMod <- function (object, std_errors = FALSE, link_fun = NULL, 
-                                   M = 3000, K = 100,
-                                   seed = 1, cores = max(parallel::detectCores() - 1, 1), 
+                                   M = 3000L, K = 100L,
+                                   seed = 1L, 
+                                   cores = max(parallel::detectCores() - 1, 1), 
                                    sandwich = FALSE, ...) {
     offset <- object$offset
     X <- model.matrix(object$Terms$termsX, object$model_frames$mfX)
@@ -622,8 +623,9 @@ marginal_coefs.MixMod <- function (object, std_errors = FALSE, link_fun = NULL,
             }
             m_betas
         }
-        if (cores > 1) {
+        if (cores > 1L) {
             cl <- parallel::makeCluster(cores)
+            parallel::clusterSetRNGStream(cl = cl, iseed = seed)
             res <- parallel::parLapply(cl, blocks, cluster_compute_marg_coefs, tht = tht,
                                        list_thetas = list_thetas, V = V, XX = X, Z = Z, 
                                        X_zi = X_zi, Z_zi = Z_zi, M = M,
@@ -1497,7 +1499,8 @@ recover_data.MixMod <- function (object, mode = c("fixed-effects", "zero_part", 
 }
 
 emm_basis.MixMod <- function (object, trms, xlev, grid, 
-                              mode = c("fixed-effects", "zero_part", "marginal"), ...) {
+                              mode = c("fixed-effects", "zero_part", "marginal"), 
+                              ...) {
     mode <- match.arg(mode)
     if (mode == "fixed-effects" || mode == "marginal") {
         m <- model.frame(trms, grid, na.action = na.pass, xlev = xlev)
@@ -1523,7 +1526,22 @@ emm_basis.MixMod <- function (object, trms, xlev, grid,
         dfargs <- list(df = Inf)
         dffun <- function (k, dfargs) dfargs$df
     }
-    list(X = X, bhat = bhat, nbasis = nbasis, V = V, dffun = dffun, dfargs = dfargs)
+    .std.link.labels <- function (fam, misc) {
+        if (is.null(fam) || !is.list(fam)) 
+            return(misc)
+        if (fam$link == "identity") 
+            return(misc)
+        misc$tran = fam$link
+        misc$inv.lbl = "response"
+        if (length(grep("binomial", fam$family)) == 1) 
+            misc$inv.lbl = "prob"
+        else if (length(grep("poisson", fam$family)) == 1) 
+            misc$inv.lbl = "rate"
+        misc
+    }
+    misc <- .std.link.labels(object$family, list())
+    list(X = X, bhat = bhat, nbasis = nbasis, V = V, dffun = dffun, 
+         dfargs = dfargs, misc = misc)
 }
 
 Effect.MixMod <- function (focal.predictors, mod, ...) {
