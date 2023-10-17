@@ -1,10 +1,10 @@
 Package: GLMMadaptive
 Title: Generalized Linear Mixed Models using Adaptive Gaussian
         Quadrature
-Version: 0.9-0
+Version: 0.9-1
 Authors@R: person("Dimitris", "Rizopoulos", email = "d.rizopoulos@erasmusmc.nl",
                   role = c("aut", "cre"), comment = c(ORCID = '0000-0001-9397-0900'))
-Date: 2023-06-22
+Date: 2023-10-17
 Maintainer: Dimitris Rizopoulos <d.rizopoulos@erasmusmc.nl>
 BugReports: https://github.com/drizopoulos/GLMMadaptive/issues
 Description: Fits generalized linear mixed models for a single grouping factor under
@@ -22,8 +22,8 @@ URL: https://drizopoulos.github.io/GLMMadaptive/,
 VignetteBuilder: knitr
 RoxygenNote: 6.1.1
 NeedsCompilation: no
-Packaged: 2023-06-22 07:06:23 UTC; drizo
+Packaged: 2023-10-17 07:55:44 UTC; drizo
 Author: Dimitris Rizopoulos [aut, cre]
     (<https://orcid.org/0000-0001-9397-0900>)
 Repository: CRAN
-Date/Publication: 2023-06-22 07:40:08 UTC
+Date/Publication: 2023-10-17 08:40:05 UTC
