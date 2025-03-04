@@ -12,7 +12,7 @@
 
 <meta name="author" content="Dimitris Rizopoulos" />
 
-<meta name="date" content="2023-10-17" />
+<meta name="date" content="2025-03-04" />
 
 <title>GLMMadaptive Basics</title>
 
@@ -51,7 +51,7 @@ overflow: visible;
 </style>
 <style type="text/css" data-origin="pandoc">
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -62,7 +62,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
 { counter-reset: source-line 0; }
@@ -340,7 +340,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">GLMMadaptive Basics</h1>
 <h4 class="author">Dimitris Rizopoulos</h4>
-<h4 class="date">2023-10-17</h4>
+<h4 class="date">2025-03-04</h4>
 
 
 <div id="TOC">
@@ -589,7 +589,7 @@ shown):</p>
 <span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co">#&gt;        AIC    BIC log.Lik  LRT df p.value</span></span>
 <span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">#&gt; fm2 730.94 746.57 -359.47                </span></span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt; fm3 731.62 749.86 -358.81 1.32  1  0.2499</span></span></code></pre></div>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt; fm3 731.63 749.87 -358.82 1.31  1  0.2523</span></span></code></pre></div>
 <p>The results now suggest that indeed the covariance between the two
 random effects terms is not statistically different from zero.</p>
 </div>
