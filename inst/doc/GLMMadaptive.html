@@ -12,7 +12,7 @@
 
 <meta name="author" content="Dimitris Rizopoulos" />
 
-<meta name="date" content="2025-03-04" />
+<meta name="date" content="2026-11-17" />
 
 <title>GLMMadaptive Basics</title>
 
@@ -50,8 +50,9 @@ overflow: visible;
 }
 </style>
 <style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -62,7 +63,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
 { counter-reset: source-line 0; }
@@ -340,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">GLMMadaptive Basics</h1>
 <h4 class="author">Dimitris Rizopoulos</h4>
-<h4 class="date">2025-03-04</h4>
+<h4 class="date">2026-11-17</h4>
 
 
 <div id="TOC">
@@ -589,7 +590,7 @@ shown):</p>
 <span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co">#&gt;        AIC    BIC log.Lik  LRT df p.value</span></span>
 <span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">#&gt; fm2 730.94 746.57 -359.47                </span></span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt; fm3 731.63 749.87 -358.82 1.31  1  0.2523</span></span></code></pre></div>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt; fm3 731.62 749.86 -358.81 1.32  1  0.2499</span></span></code></pre></div>
 <p>The results now suggest that indeed the covariance between the two
 random effects terms is not statistically different from zero.</p>
 </div>
@@ -674,11 +675,11 @@ intercept. The penalized model can be fitted by setting argument
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>gm2 <span class="ot">&lt;-</span> <span class="fu">mixed_model</span>(<span class="at">fixed =</span> y <span class="sc">~</span> sex <span class="sc">*</span> time, <span class="at">random =</span> <span class="sc">~</span> <span class="dv">1</span> <span class="sc">|</span> id, <span class="at">data =</span> DF,</span>
 <span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>                   <span class="at">family =</span> <span class="fu">poisson</span>(), <span class="at">penalized =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">cbind</span>(<span class="st">&#39;unpenalized&#39;</span> <span class="ot">=</span> <span class="fu">fixef</span>(gm1), <span class="st">&#39;penalized&#39;</span> <span class="ot">=</span> <span class="fu">fixef</span>(gm2))</span>
-<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="co">#&gt;                unpenalized  penalized</span></span>
-<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="co">#&gt; (Intercept)     2.94471506  2.9433925</span></span>
-<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="co">#&gt; sexfemale      -0.86111218 -0.8599374</span></span>
-<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="co">#&gt; time            0.24039444  0.2404593</span></span>
-<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co">#&gt; sexfemale:time -0.05105926 -0.0511505</span></span></code></pre></div>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="co">#&gt;                unpenalized   penalized</span></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="co">#&gt; (Intercept)     2.94471505  2.94137865</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="co">#&gt; sexfemale      -0.86111217 -0.85519416</span></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="co">#&gt; time            0.24039444  0.24045750</span></span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co">#&gt; sexfemale:time -0.05105926 -0.05114862</span></span></code></pre></div>
 <p>In this example we observe small differences between the penalized
 and unpenalized models. The users have the option to alter the
 specification of the Student’s t penalty by directly specifying the

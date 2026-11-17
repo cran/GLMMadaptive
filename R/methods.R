@@ -909,16 +909,7 @@ predict.MixMod <- function (object, newdata, newdata2 = NULL,
         type_pred <- "response"
     }
     if (missing(newdata)) {
-        newdata <- object$model_frames$mfX
-        combine <- function (mf, newdata) {
-            mf <- object$model_frames$mfX_zi
-            cond <- length(mf) >= 1 && any(ind <- !names(mf) %in% names(newdata))
-            if (cond) cbind(newdata, mf[ind]) else newdata
-        }
-        newdata <- combine(object$model_frames$mfZ, newdata)
-        newdata <- combine(object$model_frames$mfX_zi, newdata)
-        newdata <- combine(object$model_frames$mfZ_zi, newdata)
-        newdata[[object$id_name]] <- object[["id"]]
+        newdata <- object$data
     }
     termsX <- delete.response(object$Terms$termsX)
     mfX <- model.frame(termsX, newdata, 
@@ -1337,6 +1328,18 @@ simulate.MixMod <- function (object, nsim = 1, seed = NULL,
             assign(".N", N, envir = env)
             sim_fun <- function (n, mu, phis, eta_zi) {
                 rbinom(n = n, size = .N, prob = mu)
+            }
+            environment(sim_fun) <- env
+        } else if (object$family$family == "beta binomial") {
+            N <- if ((NCOL(y <- model.response(object$model_frames$mfX))) == 2) 
+                y[, 1] + y[, 2] else 1
+            .N <- N
+            env <- new.env(parent = .GlobalEnv)
+            assign(".N", N, envir = env)
+            sim_fun <- function (n, mu, phis, eta_zi) {
+                phi <- exp(phis)
+                probs <- rbeta(n, shape1 = mu * phi, shape2 = phi * (1 - mu))
+                rbinom(n, size = .N, prob = probs)
             }
             environment(sim_fun) <- env
         } else if (object$family$family == "zero-inflated binomial") {
